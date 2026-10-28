@@ -11,3 +11,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Repository scaffold: Python package `well_ops` (src layout, uv, Python 3.12), Makefile,
   CI running ruff, mypy and pytest, licence and data attribution files, and ADR 0001.
+- `make download`: fetches the CIRA pump dataset from Zenodo (MD5-verified) and four Sodir
+  FactPages tables (header-checked) into `data/raw/`, and writes `data/manifest.json`.
