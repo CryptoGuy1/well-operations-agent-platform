@@ -15,6 +15,7 @@ MANIFEST_NAME = "manifest.json"
 @dataclass(frozen=True)
 class ManifestEntry:
     file: str
+    source: str
     source_url: str
     bytes: int
     sha256: str
@@ -35,10 +36,11 @@ def utc_now() -> str:
 
 
 def build_entry(
-    path: Path, data_dir: Path, source_url: str, licence: str, retrieved_at: str
+    path: Path, data_dir: Path, source: str, source_url: str, licence: str, retrieved_at: str
 ) -> ManifestEntry:
     return ManifestEntry(
         file=path.relative_to(data_dir).as_posix(),
+        source=source,
         source_url=source_url,
         bytes=path.stat().st_size,
         sha256=sha256_file(path),
@@ -51,7 +53,7 @@ def load_manifest(path: Path) -> list[ManifestEntry]:
     if not path.exists():
         return []
     raw: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
-    return [ManifestEntry(**item) for item in raw["files"]]
+    return [ManifestEntry(**{"source": "", **item}) for item in raw["files"]]
 
 
 def write_manifest(path: Path, entries: list[ManifestEntry]) -> list[ManifestEntry]:

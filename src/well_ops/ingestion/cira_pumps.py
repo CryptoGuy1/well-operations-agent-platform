@@ -15,6 +15,7 @@ from well_ops.ingestion.manifest import build_entry, utc_now
 
 RECORD_ID = "18479728"
 API_URL = f"https://zenodo.org/api/records/{RECORD_ID}"
+SOURCE = "CIRA Centrifugal Pump Dataset (Zenodo)"
 LICENCE = "CC BY 4.0"
 EXPECTED_CSV_COUNT = 8
 README_NAME = "README.md"
@@ -75,6 +76,6 @@ def download(data_dir: Path) -> DownloadResult:
             log.error("CIRA %s failed, previous copy kept: %s", remote.name, exc)
             result.failures.append(f"cira/{remote.name}: {exc}")
             continue
-        result.entries.append(build_entry(dest, data_dir, remote.url, LICENCE, utc_now()))
+        result.entries.append(build_entry(dest, data_dir, SOURCE, remote.url, LICENCE, utc_now()))
         log.info("CIRA %s ok (MD5 verified)", remote.name)
     return result

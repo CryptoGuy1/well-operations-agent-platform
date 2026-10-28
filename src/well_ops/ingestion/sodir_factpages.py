@@ -11,6 +11,7 @@ from pathlib import Path
 from well_ops.ingestion._download import DownloadResult, fetch
 from well_ops.ingestion.manifest import build_entry, utc_now
 
+SOURCE = "Sodir FactPages"
 LICENCE = "NLOD 2.0"
 
 _EXPORT = (
@@ -94,6 +95,6 @@ def download(data_dir: Path, tables: tuple[Table, ...] = TABLES) -> DownloadResu
             log.error("Sodir %s failed, previous copy kept: %s", table.report, exc)
             result.failures.append(f"sodir/{table.filename}: {exc}")
             continue
-        result.entries.append(build_entry(dest, data_dir, table.url, LICENCE, utc_now()))
+        result.entries.append(build_entry(dest, data_dir, SOURCE, table.url, LICENCE, utc_now()))
         log.info("Sodir %s ok (header checked)", table.report)
     return result

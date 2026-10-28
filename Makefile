@@ -1,4 +1,4 @@
-.PHONY: setup lint test download audit
+.PHONY: setup lint test download download-volve audit
 
 setup:
 	uv sync
@@ -13,6 +13,9 @@ test:
 
 download:
 	uv run python scripts/download.py
+
+download-volve:
+	uv run python scripts/download_volve.py
 
 audit:
 	@echo "audit: not implemented yet (Phase 1, after download)" >&2

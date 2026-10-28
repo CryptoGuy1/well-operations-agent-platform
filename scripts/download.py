@@ -26,7 +26,7 @@ def main(argv: list[str] | None = None) -> int:
 
     manifest = write_manifest(args.data_dir / MANIFEST_NAME, entries)
     print(f"\n{'file':<45} {'bytes':>10}  sha256        licence")
-    for entry in manifest:
+    for entry in sorted(entries, key=lambda e: e.file):
         print(f"{entry.file:<45} {entry.bytes:>10}  {entry.sha256[:12]}  {entry.licence}")
     print(f"\n{len(entries)} downloaded, {len(failures)} failed, {len(manifest)} in manifest")
     for failure in failures:
