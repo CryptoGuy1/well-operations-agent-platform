@@ -1,0 +1,42 @@
+Well Operations Agent Platform
+Copyright 2026 Benjamin Nweke
+
+The source code in this repository is licensed under the Apache License, Version 2.0
+(see LICENSE). The datasets listed below are not distributed with this repository. They are
+downloaded by the user from the original publishers and remain subject to their own licences.
+
+--------------------------------------------------------------------------------
+Volve field data
+--------------------------------------------------------------------------------
+Source:    Equinor ASA, Volve data village
+           https://www.equinor.com/energy/volve-data-sharing
+Owners:    Equinor ASA and the Volve licence partners
+Licence:   Equinor Open Data Licence
+           Terms: https://www.equinor.com/energy/volve-data-sharing
+           The full licence terms are distributed with the dataset in the file
+           'HRS and Terms and conditions for license to data - Volve.pdf'.
+Notes:     The data must not be sold, alone or as part of another product.
+           Attribution to Equinor ASA and the Volve licence partners is required.
+
+--------------------------------------------------------------------------------
+Sodir FactPages
+--------------------------------------------------------------------------------
+Source:    Norwegian Offshore Directorate (Sokkeldirektoratet, Sodir), FactPages
+           https://factpages.sodir.no/
+Licence:   Norwegian Licence for Open Government Data (NLOD) 2.0
+           Terms: https://data.norge.no/nlod/en/2.0
+Notice:    Contains data under the Norwegian licence for Open Government data (NLOD)
+           distributed by the Norwegian Offshore Directorate.
+
+--------------------------------------------------------------------------------
+CIRA Centrifugal Pump Dataset
+--------------------------------------------------------------------------------
+Source:    Zenodo record, doi:10.5281/zenodo.18479728
+           https://doi.org/10.5281/zenodo.18479728
+Citation:  Angelo Martone and Gaetano Zazzaro, Italian Aerospace Research Centre (CIRA).
+           Centrifugal Pump Dataset, version v2 (2026), Zenodo. doi:10.5281/zenodo.18479728.
+           Licensed under CC BY 4.0.
+Licence:   Creative Commons Attribution 4.0 International (CC BY 4.0)
+           Terms: https://creativecommons.org/licenses/by/4.0/
+Notes:     Attribution to the dataset authors and the DOI is required. Any changes
+           made to the data are recorded by this project.
