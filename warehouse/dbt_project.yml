@@ -1,0 +1,27 @@
+# dbt project for the well_ops warehouse. See docs/adr/0003-warehouse-and-tooling.md.
+# Run from the repository root with `make dbt-build`.
+name: well_ops
+version: "0.1.0"
+config-version: 2
+profile: well_ops
+
+flags:
+  send_anonymous_usage_stats: false
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  well_ops:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts

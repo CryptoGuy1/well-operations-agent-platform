@@ -7,6 +7,9 @@ license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "dbt-core>=1.12,<2",
+    "dbt-duckdb>=1.11.1",
+    "duckdb>=2.0.0",
     "openpyxl>=3.1.5",
 ]
 

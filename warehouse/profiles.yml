@@ -1,0 +1,8 @@
+# The path is relative to the directory dbt is run from: the repository root (see `make dbt-build`).
+well_ops:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: data/warehouse/well_ops.duckdb
+      threads: 4
