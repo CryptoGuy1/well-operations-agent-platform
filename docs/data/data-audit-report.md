@@ -14,6 +14,10 @@ report exactly.
 Licence), Sodir FactPages (NLOD 2.0) and the CIRA Centrifugal Pump Dataset (CC BY 4.0). See
 `NOTICE` and `docs/data/volve-access.md`.
 
+**Held-out wellbores.** Per-wellbore tables in this report predate the held-out draw (ADR 0002
+D8, commit e439314) and are kept as the Phase 1 record. From Phase 2 onwards, outputs name
+development wellbores only.
+
 ## 1. Volve daily drilling reports
 
 Files: `data/raw/volve/Well_technical_data/Daily Drilling Report - XML Version/`, one WITSML 1.4

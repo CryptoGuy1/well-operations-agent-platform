@@ -30,10 +30,10 @@ from well_ops.ingestion.audit import (
 
 DDR = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <witsml:drillReports xmlns:witsml="http://www.witsml.org/schemas/1series"><witsml:drillReport>
-<witsml:nameWellbore>NO 15/9-F-1</witsml:nameWellbore>
+<witsml:nameWellbore>NO 15/9-F-11 T2</witsml:nameWellbore>
 <witsml:dTimStart>2010-01-01T00:00:00+01:00</witsml:dTimStart>
 <witsml:dTimEnd>2010-01-02T00:00:00+01:00</witsml:dTimEnd>
-<witsml:wellboreAlias><witsml:name>7223</witsml:name>
+<witsml:wellboreAlias><witsml:name>7078</witsml:name>
 <witsml:namingSystem>NPD number</witsml:namingSystem></witsml:wellboreAlias>
 <witsml:wellboreInfo><witsml:dTimSpud>2009-12-01T00:00:00+01:00</witsml:dTimSpud></witsml:wellboreInfo>
 <witsml:statusInfo><witsml:md uom="m">-999.99</witsml:md>
@@ -64,8 +64,8 @@ FULL_DAY = [
 def test_parse_drill_report_reads_ids_status_and_activities(tmp_path: Path) -> None:
     report = parse_drill_report(_ddr(tmp_path, "a.xml", FULL_DAY))
 
-    assert report.wellbore == "NO 15/9-F-1"
-    assert report.npdid == "7223"
+    assert report.wellbore == "NO 15/9-F-11 T2"
+    assert report.npdid == "7078"
     assert report.status["diaHole"] == ("8.5", "in", None)
     assert report.activities[0].duration == timedelta(hours=6)
     assert report.activities[0].fields["md@uom"] == "m"
@@ -112,9 +112,9 @@ def test_split_code_without_separator() -> None:
     ("raw", "expected"),
     [
         ("NO 15_$47$_9-F-11 T2", "15/9-F-11 T2"),
-        ("NO  15/9-F-1 C", "15/9-F-1 C"),
-        ("15/9-F-15A - Main Wellbore", "15/9-F-15 A"),
-        ("15/9-F-12", "15/9-F-12"),
+        ("NO  15/9-X-1 C", "15/9-X-1 C"),
+        ("15/9-X-15A - Main Wellbore", "15/9-X-15 A"),
+        ("15/9-X-12", "15/9-X-12"),
     ],
 )
 def test_normalise_well_name(raw: str, expected: str) -> None:
@@ -123,37 +123,40 @@ def test_normalise_well_name(raw: str, expected: str) -> None:
 
 def test_decode_witsml_name_and_meta_file_info() -> None:
     assert decode_witsml_name("17 1/2_$34$_ Final (abc)(NULL)") == '17 1/2" Final'
-    text = "1  NO 15_$47$_9-F-11 T2 (id-1)(NULL)\n2  NO 15_$47$_9-F-11 B (id-2)(NULL)\n"
+    text = "1  NO 15_$47$_9-F-11 T2 (id-1)(NULL)\n2  NO 15_$47$_9-X-1 B (id-2)(NULL)\n"
     assert parse_meta_file_info(text) == {
         "1": "NO 15_$47$_9-F-11 T2 (id-1)(NULL)",
-        "2": "NO 15_$47$_9-F-11 B (id-2)(NULL)",
+        "2": "NO 15_$47$_9-X-1 B (id-2)(NULL)",
     }
 
 
 def test_match_well_names_prefers_npdid_and_reports_conflicts() -> None:
-    sodir = [SodirWellbore("15/9-F-4", "5693", "VOLVE"), SodirWellbore("15/9-F-5", "5769", "VOLVE")]
+    sodir = [
+        SodirWellbore("15/9-X-1", "90001", "VOLVE"),
+        SodirWellbore("15/9-X-2", "90002", "VOLVE"),
+    ]
     observations = [
-        NameObservation("Production daily", "NO 15/9-F-4 AH", "5693"),
-        NameObservation("Well picks", "NO 15/9-F-5"),
-        NameObservation("DDR", "NO 15/9-F-5", "5693"),
+        NameObservation("Production daily", "NO 15/9-X-1 AH", "90001"),
+        NameObservation("Well picks", "NO 15/9-X-2"),
+        NameObservation("DDR", "NO 15/9-X-2", "90001"),
         NameObservation("WITSML", "test"),
     ]
 
     matches = {(m.source, m.raw): m for m in match_well_names(observations, sodir)}
 
-    assert matches[("Production daily", "NO 15/9-F-4 AH")].canonical == "15/9-F-4"
-    assert matches[("Production daily", "NO 15/9-F-4 AH")].method == "NPDID"
-    assert matches[("Well picks", "NO 15/9-F-5")].method == "name"
-    assert matches[("DDR", "NO 15/9-F-5")].conflict == "name matches 15/9-F-5"
+    assert matches[("Production daily", "NO 15/9-X-1 AH")].canonical == "15/9-X-1"
+    assert matches[("Production daily", "NO 15/9-X-1 AH")].method == "NPDID"
+    assert matches[("Well picks", "NO 15/9-X-2")].method == "name"
+    assert matches[("DDR", "NO 15/9-X-2")].conflict == "name matches 15/9-X-2"
     assert matches[("WITSML", "test")].canonical is None
 
 
 def test_audit_witsml_counts_zip_and_extracted(tmp_path: Path) -> None:
     root = tmp_path / audit.WITSML_DIR
     root.mkdir(parents=True)
-    well = "Norway-NA-15_$47$_9-F-1"
+    well = "Norway-NA-15_$47$_9-F-11"
     files = {
-        f"{well}/MetaFileInfo.txt": "1  15_$47$_9-F-1 - Main Wellbore (B-1)(NULL)\n",
+        f"{well}/MetaFileInfo.txt": "1  15_$47$_9-F-11 T2 - Main Wellbore (B-1)(NULL)\n",
         f"{well}/1/trajectory/1.xml": "<t/>",
         f"{well}/1/log/1/1/1/00001.xml": "<log>" + "x" * 100 + "</log>",
     }
@@ -171,7 +174,7 @@ def test_audit_witsml_counts_zip_and_extracted(tmp_path: Path) -> None:
     assert inventory.extracted_files == 2
     assert inventory.extracted_missing_from_zip == []
     assert inventory.zip_only_object_types == {"log": 1}
-    assert inventory.cells[(well, "15/9-F-1 - Main Wellbore", "log")] == [1, 111]
+    assert inventory.cells[(well, "15/9-F-11 T2 - Main Wellbore", "log")] == [1, 111]
 
 
 def _workbook(tmp_path: Path) -> None:
@@ -185,9 +188,9 @@ def _workbook(tmp_path: Path) -> None:
         ["Wellbore name", "NPDCode", "Year", "Month", "On Stream", "Oil", "Gas", "Water"]
     )
     monthly.append([None, None, None, None, "hrs", "Sm3", "Sm3", "Sm3"])
-    monthly.append(["15/9-F-4", 5693, 2010, 1, 700, 100.0, 1000.0, 10.0])
-    monthly.append(["15/9-F-5", 5769, 2010, 1, 700, 99.0, 1000.0, 10.0])
-    monthly.append(["15/9-F-5", 5769, 2009, 12, 700, 5.0, 0.0, 0.0])
+    monthly.append(["15/9-X-1", 90001, 2010, 1, 700, 100.0, 1000.0, 10.0])
+    monthly.append(["15/9-X-2", 90002, 2010, 1, 700, 99.0, 1000.0, 10.0])
+    monthly.append(["15/9-X-2", 90002, 2009, 12, 700, 5.0, 0.0, 0.0])
     workbook.save(path)
 
 
@@ -200,7 +203,7 @@ def test_audit_production_reads_units_row_and_periods(tmp_path: Path) -> None:
     assert sheet.units_row[5] == "Sm3"
     assert sheet.data_rows == 3
     assert (sheet.first, sheet.last) == ("2009-12", "2010-01")
-    assert sheet.wells == {"15/9-F-4": 1, "15/9-F-5": 2}
+    assert sheet.wells == {"15/9-X-1": 1, "15/9-X-2": 2}
 
 
 def _sodir_tables(tmp_path: Path) -> None:
