@@ -1,0 +1,25 @@
+version: 2
+
+# CSV seeds cannot carry comment lines, so the source is cited here.
+seeds:
+  - name: lost_time_codes
+    description: >
+      Lost-time tiers exactly as in docs/adr/0002-phase-2-data-decisions.md, D7. 'primary' is
+      used in scored evaluation; 'possible' is reported separately and never added to it.
+      Changing a row needs an amendment to ADR 0002 before any scored run.
+    config:
+      column_types:
+        category: varchar
+        subcategory: varchar
+        tier: varchar
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "category || ' -- ' || subcategory"
+    columns:
+      - name: tier
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [primary, possible]

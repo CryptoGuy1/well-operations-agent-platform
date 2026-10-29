@@ -33,3 +33,51 @@ models:
                   - no_activities
                   - activity_gap_or_overlap
                   - depth_not_recorded
+
+  - name: int_ddr__hole_section
+    description: >
+      Hole sections per wellbore from statusInfo diaHole, mdDiaHoleStart and dTimDiaHoleStart.
+      Reports before the first stated diaHole form 'before_first_section'. A new dTimDiaHoleStart
+      without a diaHole starts a section of unknown hole size. Within a section a missing diaHole
+      carries the section's size forward; inferred_share is the share of such reports.
+    columns:
+      - name: section_id
+        data_tests: [unique, not_null]
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: section_label
+        description: "'before_first_section', 'hole size unknown', or the hole size, e.g. '8.5 in'."
+        data_tests: [not_null]
+      - name: hole_size_source
+        description: >
+          Where hole_size_in comes from: 'report' (a stated diaHole in the section) or 'unknown'.
+          Prompt 2.6 adds 'bit_size' from WITSML bhaRun and tubular objects, with precedence
+          report > bit_size > unknown. Report comment text is not parsed for hole sizes.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['report', 'unknown']
+      - name: report_count
+        data_tests: [not_null]
+      - name: inferred_share
+        data_tests: [not_null, non_negative]
+
+  - name: int_ddr__activity_section
+    description: Each drilling report activity with the hole section active at its start time.
+    columns:
+      - name: activity_id
+        data_tests: [unique, not_null]
+      - name: section_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('int_ddr__hole_section')
+                field: section_id
+

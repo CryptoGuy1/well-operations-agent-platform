@@ -1,0 +1,15 @@
+category,subcategory,tier
+interruption,repair,primary
+interruption,waiting on weather,primary
+interruption,fish,primary
+interruption,lost circulation,primary
+interruption,well control,primary
+interruption,wait,primary
+interruption,other,possible
+interruption,maintain,possible
+interruption,sidetrack,possible
+interruption,rig up/down,possible
+drilling,wait,possible
+formation evaluation,wait,possible
+plug abandon,wait,possible
+workover,wait,possible

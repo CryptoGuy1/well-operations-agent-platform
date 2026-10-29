@@ -9,6 +9,7 @@ flags:
   send_anonymous_usage_stats: false
 
 model-paths: ["models"]
+seed-paths: ["seeds"]
 test-paths: ["tests"]
 macro-paths: ["macros"]
 target-path: "target"
@@ -25,3 +26,7 @@ models:
     marts:
       +materialized: table
       +schema: marts
+
+seeds:
+  well_ops:
+    +schema: reference

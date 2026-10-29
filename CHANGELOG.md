@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Daily drilling reports staged to `data/staging/ddr/` (report, activity) with UTC timestamps
   and original offsets, and -999.99 as null with the nulled elements listed; dbt models
   `stg_ddr__report`, `stg_ddr__activity` and `int_ddr__report_flag` (D4 flags) with tests.
+- Hole sections and lost time: dbt models `int_ddr__hole_section`, `int_ddr__activity_section`
+  and `fct_lost_time`, and the `lost_time_codes` seed with the ADR 0002 D7 tiers. Each section
+  records `hole_size_source` ('report' or 'unknown').
 
 ### Changed
 

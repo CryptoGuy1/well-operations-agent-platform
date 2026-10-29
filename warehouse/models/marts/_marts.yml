@@ -25,3 +25,30 @@ models:
         data_tests: [not_null]
       - name: is_heldout
         data_tests: [not_null]
+
+  - name: fct_lost_time
+    description: >
+      Activity hours by wellbore, hole section, category, subcategory and lost-time tier
+      (ADR 0002 D7). Tier 'none' for codes outside the lost_time_codes seed.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "section_id || '|' || category || ' -- ' || subcategory"
+    columns:
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: section_id
+        data_tests: [not_null]
+      - name: tier
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [primary, possible, none]
+      - name: hours
+        data_tests: [not_null, non_negative]
