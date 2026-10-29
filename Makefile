@@ -18,5 +18,4 @@ download-volve:
 	uv run python scripts/download_volve.py
 
 audit:
-	@echo "audit: not implemented yet (Phase 1, after download)" >&2
-	@exit 1
+	uv run python scripts/audit.py

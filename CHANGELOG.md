@@ -17,3 +17,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   data, well picks, perforations, EDM file and licence terms from Databricks into
   `data/raw/volve/`, recorded in `data/manifest.json`. See `docs/data/volve-access.md`.
 - Manifest entries now include a `source` field.
+- `make audit`: Phase 1 data audit (`well_ops.ingestion.audit`) computed from `data/raw/` and
+  written into `docs/data/data-audit-report.md`.

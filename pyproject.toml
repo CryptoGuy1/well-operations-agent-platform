@@ -6,13 +6,16 @@ readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "openpyxl>=3.1.5",
+]
 
 [dependency-groups]
 dev = [
     "mypy>=1.11",
     "pytest>=8.3",
     "ruff>=0.6",
+    "types-openpyxl>=3.1.5.20261017",
 ]
 
 [build-system]
