@@ -1,0 +1,150 @@
+{
+  "decision": "docs/adr/0002-phase-2-data-decisions.md, D8",
+  "population_rule": "15/9-F wellbores with at least 20 daily drilling reports",
+  "always_development": [
+    {
+      "key": "7078:T2",
+      "name": "15/9-F-11 T2"
+    }
+  ],
+  "method": "random.Random(20261028).sample(candidates, 5); candidates are the population without the always-development wellbore, ordered by D1 key (NPDID numerically, then sidetrack suffix)",
+  "seed": 20261028,
+  "candidates": [
+    {
+      "key": "5351",
+      "name": "15/9-F-14"
+    },
+    {
+      "key": "5599",
+      "name": "15/9-F-12"
+    },
+    {
+      "key": "5610",
+      "name": "15/9-F-7"
+    },
+    {
+      "key": "5693",
+      "name": "15/9-F-4"
+    },
+    {
+      "key": "5769",
+      "name": "15/9-F-5"
+    },
+    {
+      "key": "5785",
+      "name": "15/9-F-15 A"
+    },
+    {
+      "key": "5794",
+      "name": "15/9-F-15 C"
+    },
+    {
+      "key": "5927",
+      "name": "15/9-F-9"
+    },
+    {
+      "key": "6099",
+      "name": "15/9-F-10"
+    },
+    {
+      "key": "6163",
+      "name": "15/9-F-9 A"
+    },
+    {
+      "key": "6184",
+      "name": "15/9-F-15"
+    },
+    {
+      "key": "7080",
+      "name": "15/9-F-11 B"
+    },
+    {
+      "key": "7223",
+      "name": "15/9-F-1"
+    },
+    {
+      "key": "7264",
+      "name": "15/9-F-1 B"
+    },
+    {
+      "key": "7289",
+      "name": "15/9-F-15 D"
+    },
+    {
+      "key": "7405",
+      "name": "15/9-F-1 C"
+    }
+  ],
+  "held_out": [
+    {
+      "key": "5351",
+      "name": "15/9-F-14"
+    },
+    {
+      "key": "5599",
+      "name": "15/9-F-12"
+    },
+    {
+      "key": "5693",
+      "name": "15/9-F-4"
+    },
+    {
+      "key": "6163",
+      "name": "15/9-F-9 A"
+    },
+    {
+      "key": "6184",
+      "name": "15/9-F-15"
+    }
+  ],
+  "development": [
+    {
+      "key": "5610",
+      "name": "15/9-F-7"
+    },
+    {
+      "key": "5769",
+      "name": "15/9-F-5"
+    },
+    {
+      "key": "5785",
+      "name": "15/9-F-15 A"
+    },
+    {
+      "key": "5794",
+      "name": "15/9-F-15 C"
+    },
+    {
+      "key": "5927",
+      "name": "15/9-F-9"
+    },
+    {
+      "key": "6099",
+      "name": "15/9-F-10"
+    },
+    {
+      "key": "7078:T2",
+      "name": "15/9-F-11 T2"
+    },
+    {
+      "key": "7080",
+      "name": "15/9-F-11 B"
+    },
+    {
+      "key": "7223",
+      "name": "15/9-F-1"
+    },
+    {
+      "key": "7264",
+      "name": "15/9-F-1 B"
+    },
+    {
+      "key": "7289",
+      "name": "15/9-F-15 D"
+    },
+    {
+      "key": "7405",
+      "name": "15/9-F-1 C"
+    }
+  ]
+}
