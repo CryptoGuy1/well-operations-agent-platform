@@ -120,3 +120,13 @@ sheet; otherwise they stay unknown.
   visible instead of hiding it.
 - Evaluation results on held-out wellbores can be trusted because those wellbores are fixed before
   any agent exists.
+
+## Amendments
+
+### 2026-10-29
+
+D4: the per-wellbore before-spud counts listed in D4 were computed from each report's own
+dTimSpud. Two flags are used: before_sodir_spud (Sodir entry date) and before_report_spud
+(report dTimSpud). D4: depth_not_recorded applies to the status md only; mdPlanned is never
+recorded in this dataset and distDrill = -999.99 normally means no drilling that day.
+Made before any agent existed or any evaluation was run.

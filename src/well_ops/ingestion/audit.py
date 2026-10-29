@@ -19,7 +19,7 @@ from pathlib import Path
 
 from well_ops.ingestion.identifiers import NameMatch, collect_well_names, match_well_names
 from well_ops.ingestion.sodir_factpages import SodirWellbore, load_sodir_wellbores
-from well_ops.ingestion.volve_ddr import DrillReport, load_drill_reports
+from well_ops.ingestion.volve_ddr import SENTINEL, DrillReport, load_drill_reports, split_code
 from well_ops.ingestion.volve_production import PRODUCTION_XLSX, sheet_rows
 from well_ops.ingestion.volve_witsml import (
     WITSML_DIR,
@@ -27,8 +27,6 @@ from well_ops.ingestion.volve_witsml import (
     decode_witsml_name,
     parse_meta_file_info,
 )
-
-SENTINEL = "-999.99"
 
 SODIR_PRODUCTION = Path("sodir/field_production_monthly.csv")
 SODIR_PRODUCTION_GROSS = Path("sodir/field_production_gross_monthly.csv")
@@ -118,11 +116,6 @@ def audit_ddr_activities(reports: list[DrillReport], n_examples: int = 3) -> Act
             shown_codes.add(code)
             facts.examples.append((report.file, first.fields))
     return facts
-
-
-def split_code(code: str) -> tuple[str, str]:
-    category, sep, subcategory = code.partition(" -- ")
-    return (category, subcategory) if sep else (code, "")
 
 
 def audit_ddr_codes(reports: list[DrillReport]) -> list[tuple[str, str, int]]:

@@ -18,6 +18,16 @@ sources:
       - name: wellbore_alias
         description: One row per well name found in a Volve source (ADR 0002 D1, D2).
 
+  - name: ddr
+    description: Volve daily drilling reports parsed by src/well_ops/ingestion/volve_ddr.py.
+    meta:
+      external_location: "data/staging/ddr/{name}.parquet"
+    tables:
+      - name: report
+        description: One row per drillReport file. Timestamps in UTC; -999.99 is null (D3, D5).
+      - name: activity
+        description: One row per activity in a report.
+
   - name: evaluation
     description: Committed evaluation files.
     tables:

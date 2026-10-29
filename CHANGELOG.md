@@ -16,9 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   status (ADR 0002).
 - dbt models `stg_sodir__wellbore`, `stg_identifiers__wellbore_alias`,
   `stg_evaluation__heldout_wellbore` and `dim_wellbore`, with key and relationship tests.
+- Daily drilling reports staged to `data/staging/ddr/` (report, activity) with UTC timestamps
+  and original offsets, and -999.99 as null with the nulled elements listed; dbt models
+  `stg_ddr__report`, `stg_ddr__activity` and `int_ddr__report_flag` (D4 flags) with tests.
 
 ### Changed
 
+- ADR 0002 amended: D4 uses two spud flags (`before_sodir_spud`, `before_report_spud`), and
+  `depth_not_recorded` applies to the status `md` only.
 - Name matching moved from the audit to `well_ops.ingestion.identifiers`; drilling report,
   production workbook and WITSML name readers moved to per-source modules. The audit report is
   unchanged.

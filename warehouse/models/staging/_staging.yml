@@ -57,3 +57,58 @@ models:
               arguments:
                 to: ref('dim_wellbore')
                 field: wellbore_key
+
+  - name: stg_ddr__report
+    description: One row per daily drilling report (ADR 0002 D3, D5).
+    columns:
+      - name: report_file
+        data_tests: [unique, not_null]
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: start_utc
+        data_tests: [not_null]
+      - name: end_utc
+        data_tests: [not_null]
+      - name: activities
+        data_tests: [not_null, non_negative]
+      - name: nulled_elements
+        description: statusInfo elements given as -999.99 and staged as null (D3).
+
+  - name: stg_ddr__activity
+    description: One row per drilling report activity. activity_id is report_file#activity_number.
+    columns:
+      - name: activity_id
+        data_tests: [unique, not_null]
+      - name: report_file
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_ddr__report')
+                field: report_file
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: duration_hours
+        data_tests: [not_null, non_negative]
+      - name: category
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - completion
+                  - drilling
+                  - formation evaluation
+                  - interruption
+                  - moving
+                  - plug abandon
+                  - workover

@@ -14,16 +14,26 @@ import zipfile
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 from well_ops.ingestion.sodir_factpages import SodirWellbore, load_sodir_wellbores
 from well_ops.ingestion.staging import Column, write_parquet
-from well_ops.ingestion.volve_ddr import DrillReport, load_drill_reports
 from well_ops.ingestion.volve_production import PRODUCTION_XLSX, sheet_rows
 from well_ops.ingestion.volve_witsml import WITSML_ZIP, decode_witsml_name, parse_meta_file_info
 
 PICKS_DAT = Path("volve/Geophysical_Interpretations/Wells/Well_picks_Volve_v1.dat")
 PERFORATIONS_DAT = Path("volve/Geophysical_Interpretations/Wells/Well_perforations_Volve.dat")
 EDM_XML = Path("volve/Well_technical_data/EDM.XML/Volve F.edm.xml")
+
+
+class ReportName(Protocol):
+    """What the identifiers need from a daily drilling report (volve_ddr.DrillReport)."""
+
+    @property
+    def wellbore(self) -> str: ...
+
+    @property
+    def npdid(self) -> str | None: ...
 
 
 # --------------------------------------------------------------------------------------------
@@ -49,7 +59,7 @@ class NameObservation:
     npdid: str | None = None
 
 
-def well_names_ddr(reports: list[DrillReport]) -> set[NameObservation]:
+def well_names_ddr(reports: Iterable[ReportName]) -> set[NameObservation]:
     return {NameObservation("DDR", r.wellbore, r.npdid) for r in reports}
 
 
@@ -122,7 +132,7 @@ def well_names_edm(raw_dir: Path) -> set[NameObservation]:
     return observed
 
 
-def collect_well_names(raw_dir: Path, reports: list[DrillReport]) -> set[NameObservation]:
+def collect_well_names(raw_dir: Path, reports: Iterable[ReportName]) -> set[NameObservation]:
     """Every (source, name, NPDID) observed in the Volve sources."""
     observations: set[NameObservation] = set()
     observations |= well_names_ddr(reports)
@@ -280,9 +290,9 @@ ALIAS_COLUMNS: tuple[Column, ...] = (
 )
 
 
-def stage_aliases(raw_dir: Path, staging_dir: Path) -> list[Alias]:
+def stage_aliases(raw_dir: Path, staging_dir: Path, reports: Iterable[ReportName]) -> list[Alias]:
     """Write data/staging/identifiers/wellbore_alias.parquet and return the aliases."""
-    observations = collect_well_names(raw_dir, load_drill_reports(raw_dir))
+    observations = collect_well_names(raw_dir, reports)
     aliases = build_aliases(observations, load_sodir_wellbores(raw_dir))
     rows = [
         (

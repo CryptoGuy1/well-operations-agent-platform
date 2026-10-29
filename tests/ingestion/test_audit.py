@@ -17,12 +17,11 @@ from well_ops.ingestion.audit import (
     audit_witsml,
     compare_production,
     fill_report,
-    split_code,
     unit_from_column,
 )
 from well_ops.ingestion.identifiers import NameObservation, match_well_names, normalise_well_name
 from well_ops.ingestion.sodir_factpages import SodirWellbore
-from well_ops.ingestion.volve_ddr import parse_drill_report
+from well_ops.ingestion.volve_ddr import parse_drill_report, split_code
 from well_ops.ingestion.volve_production import PRODUCTION_XLSX
 from well_ops.ingestion.volve_witsml import (
     WITSML_DIR,
