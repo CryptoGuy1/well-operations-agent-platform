@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-data-audit] - 2026-10-28
+
 ### Added
 
 - Repository scaffold: Python package `well_ops` (src layout, uv, Python 3.12), Makefile,
