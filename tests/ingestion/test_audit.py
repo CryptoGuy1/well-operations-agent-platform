@@ -8,7 +8,6 @@ import pytest
 from well_ops.ingestion import audit
 from well_ops.ingestion.audit import (
     NameObservation,
-    SodirProductionFacts,
     SodirWellbore,
     audit_cira_file,
     audit_ddr_activities,
@@ -16,8 +15,9 @@ from well_ops.ingestion.audit import (
     audit_ddr_coverage,
     audit_ddr_status,
     audit_production,
+    audit_sodir_production,
     audit_witsml,
-    compare_monthly_volumes,
+    compare_production,
     decode_witsml_name,
     fill_report,
     match_well_names,
@@ -203,29 +203,62 @@ def test_audit_production_reads_units_row_and_periods(tmp_path: Path) -> None:
     assert sheet.wells == {"15/9-F-4": 1, "15/9-F-5": 2}
 
 
-def test_compare_monthly_volumes(tmp_path: Path) -> None:
-    _workbook(tmp_path)
-    sodir = SodirProductionFacts(
-        columns=[],
-        rows=1,
-        first="2010-01",
-        last="2010-01",
-        monthly={
-            (2010, 1): {
-                "prfPrdOilNetMillSm3": 0.0002,
-                "prfPrdGasNetBillSm3": 0.000001,
-                "prfPrdProducedWaterInFieldMillSm3": 0.00002,
-            }
-        },
+def _sodir_tables(tmp_path: Path) -> None:
+    (tmp_path / "sodir").mkdir()
+    (tmp_path / audit.SODIR_PRODUCTION).write_text(
+        "\ufeffprfInformationCarrier,prfYear,prfMonth,prfPrdOilNetMillSm3,prfPrdGasNetBillSm3,"
+        "prfPrdProducedWaterInFieldMillSm3,prfNpdidInformationCarrier\n"
+        "VOLVE,2010,1,0.00020,0.000001,0.00002,1\n"
+        "OTHER,2010,1,9.0,9.0,9.0,2\n",
+        encoding="utf-8",
+    )
+    (tmp_path / audit.SODIR_PRODUCTION_GROSS).write_text(
+        "\ufeffprfInformationCarrier,prfYear,prfMonth,prfPrdOilGrossMillSm3,prfPrdGasGrossBillSm3,"
+        "prfPrdProducedWaterInFieldMillSm3,prfNpdidInformationCarrier\n"
+        "VOLVE,2010,1,0.000199,0.000002,0.00002,1\n"
+        "VOLVE,2010,2,0.00001,0.0,0.0,1\n",
+        encoding="utf-8",
     )
 
-    oil, gas, water = compare_monthly_volumes(tmp_path, sodir)
 
-    assert oil.ratio_median == pytest.approx(0.995)
-    assert oil.months_within_1pct == 1
-    assert oil.workbook_months_not_in_sodir == 1
-    assert gas.ratio_median == pytest.approx(2.0)
-    assert water.ratio_median == pytest.approx(1.0)
+def test_audit_sodir_production_filters_field_and_counts_decimals(tmp_path: Path) -> None:
+    _sodir_tables(tmp_path)
+
+    facts = audit_sodir_production(tmp_path, audit.SODIR_PRODUCTION_GROSS)
+
+    assert facts.table == "field_production_gross_monthly"
+    assert (facts.rows, facts.first, facts.last) == (2, "2010-01", "2010-02")
+    assert facts.decimals["prfPrdOilGrossMillSm3"] == 6
+    assert facts.monthly[(2010, 1)]["prfPrdGasGrossBillSm3"] == pytest.approx(0.000002)
+
+
+def test_compare_production_three_way(tmp_path: Path) -> None:
+    _workbook(tmp_path)
+    _sodir_tables(tmp_path)
+    net = audit_sodir_production(tmp_path, audit.SODIR_PRODUCTION)
+    gross = audit_sodir_production(tmp_path, audit.SODIR_PRODUCTION_GROSS)
+
+    result = compare_production(tmp_path, net, gross)
+
+    ratios = {(r.quantity, r.ratio): r for r in result.ratios}
+    assert ratios[("Oil", "workbook / gross")].median == pytest.approx(1.0)
+    assert ratios[("Oil", "workbook / net")].median == pytest.approx(0.995)
+    assert ratios[("Oil", "workbook / net")].months_within_1pct == 1
+    assert ratios[("Gas", "workbook / net")].median == pytest.approx(2.0)
+    assert ratios[("Gas", "gross / net")].median == pytest.approx(2.0)
+    cov = {(c.source, c.quantity): c for c in result.coverage}
+    workbook_oil = cov[("Workbook (sum of wells)", "Oil")]
+    assert (workbook_oil.first, workbook_oil.last, workbook_oil.months_listed) == (
+        "2009-12",
+        "2010-01",
+        2,
+    )
+    assert cov[("Sodir gross (sum wellbores)", "Oil")].last == "2010-02"
+    oil_rows = result.monthly["Oil"]
+    assert oil_rows[0] == ("2009-12", 5.0, None, None)
+    assert oil_rows[2][0] == "2010-02"
+    assert oil_rows[2][1] is None
+    assert "Water" not in result.monthly
 
 
 def test_audit_cira_file_handles_semicolons_and_gaps(tmp_path: Path) -> None:

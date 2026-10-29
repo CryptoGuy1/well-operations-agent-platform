@@ -35,6 +35,7 @@ EDM_XML = Path("volve/Well_technical_data/EDM.XML/Volve F.edm.xml")
 SODIR_DEVELOPMENT = Path("sodir/wellbore_development_all.csv")
 SODIR_EXPLORATION = Path("sodir/wellbore_exploration_all.csv")
 SODIR_PRODUCTION = Path("sodir/field_production_monthly.csv")
+SODIR_PRODUCTION_GROSS = Path("sodir/field_production_gross_monthly.csv")
 CIRA_DIR = Path("cira")
 
 
@@ -583,95 +584,193 @@ def unit_from_column(column: str) -> str:
     return ""
 
 
+Period = tuple[int, int]
+
+
+def _period(period: Period) -> str:
+    return f"{period[0]}-{period[1]:02d}"
+
+
 @dataclass
 class SodirProductionFacts:
+    table: str
     columns: list[str]
     rows: int
     first: str
     last: str
-    monthly: dict[tuple[int, int], dict[str, float]]
+    monthly: dict[Period, dict[str, float]]
+    decimals: dict[str, int] = field(default_factory=dict)
 
 
-def audit_sodir_production(raw_dir: Path, field_name: str = "VOLVE") -> SodirProductionFacts:
-    """Question 8: monthly rows for one field in the Sodir saleable production table."""
-    with (raw_dir / SODIR_PRODUCTION).open(encoding="utf-8-sig", newline="") as fh:
+def audit_sodir_production(
+    raw_dir: Path, path: Path = SODIR_PRODUCTION, field_name: str = "VOLVE"
+) -> SodirProductionFacts:
+    """Question 8: monthly rows for one field in a Sodir field production table.
+
+    `decimals` is the largest number of decimal places used in each volume column, which sets
+    the resolution of the published figures.
+    """
+    with (raw_dir / path).open(encoding="utf-8-sig", newline="") as fh:
         reader = csv.DictReader(fh)
         columns = list(reader.fieldnames or [])
         rows = [r for r in reader if r["prfInformationCarrier"] == field_name]
+    volume_columns = [c for c in columns if c.startswith("prfPrd")]
     monthly = {
         (int(r["prfYear"]), int(r["prfMonth"])): {
-            c: float(r[c]) for c in columns if c.startswith("prfPrd") and r[c] != ""
+            c: float(r[c]) for c in volume_columns if r[c] != ""
         }
         for r in rows
     }
+    decimals = {
+        c: max((len(r[c].partition(".")[2]) for r in rows if r[c]), default=0)
+        for c in volume_columns
+    }
     periods = sorted(monthly)
     return SodirProductionFacts(
+        table=path.stem,
         columns=columns,
         rows=len(rows),
-        first=f"{periods[0][0]}-{periods[0][1]:02d}",
-        last=f"{periods[-1][0]}-{periods[-1][1]:02d}",
+        first=_period(periods[0]),
+        last=_period(periods[-1]),
         monthly=monthly,
+        decimals=decimals,
+    )
+
+
+def workbook_monthly_sums(raw_dir: Path) -> tuple[set[Period], dict[str, dict[Period, float]]]:
+    """Months listed in the workbook's monthly sheet, and Oil, Gas and Water summed over wells.
+
+    Cells that are not numbers (the text 'NULL') contribute nothing.
+    """
+    rows = _sheet_rows(raw_dir / PRODUCTION_XLSX)["Monthly Production Data"]
+    header = [str(c) for c in rows[0]]
+    listed: set[Period] = set()
+    sums: dict[str, dict[Period, float]] = {"Oil": {}, "Gas": {}, "Water": {}}
+    for row in rows[2:]:
+        period = (int(row[header.index("Year")]), int(row[header.index("Month")]))
+        listed.add(period)
+        for quantity, values in sums.items():
+            value = row[header.index(quantity)]
+            if isinstance(value, int | float):
+                values[period] = values.get(period, 0.0) + float(value)
+    return listed, sums
+
+
+# Sodir column and scale to Sm3 per quantity. Produced water has the same column in both tables.
+SODIR_COLUMNS = {
+    ("Oil", "net"): ("prfPrdOilNetMillSm3", 1e6),
+    ("Gas", "net"): ("prfPrdGasNetBillSm3", 1e9),
+    ("Water", "net"): ("prfPrdProducedWaterInFieldMillSm3", 1e6),
+    ("Oil", "gross"): ("prfPrdOilGrossMillSm3", 1e6),
+    ("Gas", "gross"): ("prfPrdGasGrossBillSm3", 1e9),
+    ("Water", "gross"): ("prfPrdProducedWaterInFieldMillSm3", 1e6),
+}
+
+
+def sodir_series(facts: SodirProductionFacts, quantity: str, basis: str) -> dict[Period, float]:
+    column, scale = SODIR_COLUMNS[(quantity, basis)]
+    return {p: v[column] * scale for p, v in facts.monthly.items() if column in v}
+
+
+@dataclass(frozen=True)
+class Coverage:
+    source: str
+    quantity: str
+    first: str
+    last: str
+    months_listed: int
+    months_nonzero: int
+    total_sm3: float
+
+
+def coverage(
+    source: str, quantity: str, listed: Iterable[Period], values: dict[Period, float]
+) -> Coverage:
+    periods = sorted(listed)
+    return Coverage(
+        source=source,
+        quantity=quantity,
+        first=_period(periods[0]),
+        last=_period(periods[-1]),
+        months_listed=len(periods),
+        months_nonzero=sum(v > 0 for v in values.values()),
+        total_sm3=sum(values.values()),
     )
 
 
 @dataclass(frozen=True)
-class ComparisonRow:
+class RatioSummary:
     quantity: str
+    ratio: str
     months_compared: int
     months_within_1pct: int
-    ratio_median: float | None
-    ratio_min: float | None
-    ratio_max: float | None
-    total_workbook_sm3: float
-    total_sodir_sm3: float
-    workbook_months_not_in_sodir: int
+    median: float | None
+    minimum: float | None
+    maximum: float | None
 
 
-def compare_monthly_volumes(raw_dir: Path, sodir: SodirProductionFacts) -> list[ComparisonRow]:
-    """Monthly sum over wellbores in the workbook's monthly sheet versus Sodir field volumes.
+def ratio_summary(
+    quantity: str, ratio: str, numerator: dict[Period, float], denominator: dict[Period, float]
+) -> RatioSummary:
+    """numerator / denominator over months where both are non-zero."""
+    ratios = [
+        numerator[p] / denominator[p]
+        for p in numerator
+        if numerator[p] > 0 and denominator.get(p, 0.0) > 0
+    ]
+    return RatioSummary(
+        quantity=quantity,
+        ratio=ratio,
+        months_compared=len(ratios),
+        months_within_1pct=sum(abs(r - 1) <= 0.01 for r in ratios),
+        median=statistics.median(ratios) if ratios else None,
+        minimum=min(ratios) if ratios else None,
+        maximum=max(ratios) if ratios else None,
+    )
 
-    Ratio = workbook / Sodir, over months where both are non-zero.
-    """
-    rows = _sheet_rows(raw_dir / PRODUCTION_XLSX)["Monthly Production Data"]
-    header = [str(c) for c in rows[0]]
-    sums: dict[str, dict[tuple[int, int], float]] = {"Oil": {}, "Gas": {}, "Water": {}}
-    for row in rows[2:]:
-        period = (int(row[header.index("Year")]), int(row[header.index("Month")]))
-        for quantity in sums:
-            value = row[header.index(quantity)]
-            if isinstance(value, int | float):
-                sums[quantity][period] = sums[quantity].get(period, 0.0) + float(value)
-    pairs = {
-        "Oil": ("prfPrdOilNetMillSm3", 1e6),
-        "Gas": ("prfPrdGasNetBillSm3", 1e9),
-        "Water": ("prfPrdProducedWaterInFieldMillSm3", 1e6),
-    }
-    result = []
-    for quantity, (column, scale) in pairs.items():
-        ratios = []
-        total_workbook = total_sodir = 0.0
-        for period, sodir_values in sodir.monthly.items():
-            ours = sums[quantity].get(period, 0.0)
-            theirs = sodir_values.get(column, 0.0) * scale
-            total_workbook += ours
-            total_sodir += theirs
-            if ours > 0 and theirs > 0:
-                ratios.append(ours / theirs)
-        result.append(
-            ComparisonRow(
-                workbook_months_not_in_sodir=sum(
-                    1 for p, v in sums[quantity].items() if v > 0 and p not in sodir.monthly
-                ),
-                quantity=quantity,
-                months_compared=len(ratios),
-                months_within_1pct=sum(abs(r - 1) <= 0.01 for r in ratios),
-                ratio_median=statistics.median(ratios) if ratios else None,
-                ratio_min=min(ratios) if ratios else None,
-                ratio_max=max(ratios) if ratios else None,
-                total_workbook_sm3=total_workbook,
-                total_sodir_sm3=total_sodir,
-            )
-        )
+
+@dataclass
+class ProductionComparison:
+    coverage: list[Coverage]
+    ratios: list[RatioSummary]
+    # quantity -> rows of (month, workbook, gross, net); None where a source has no row
+    monthly: dict[str, list[tuple[str, float | None, float | None, float | None]]]
+    decimals: dict[str, int]
+
+
+def compare_production(
+    raw_dir: Path, net: SodirProductionFacts, gross: SodirProductionFacts
+) -> ProductionComparison:
+    """Question 9: workbook sum of wells versus Sodir gross (sum wellbores) and net (saleable)."""
+    listed, workbook = workbook_monthly_sums(raw_dir)
+    result = ProductionComparison(
+        coverage=[], ratios=[], monthly={}, decimals={**net.decimals, **gross.decimals}
+    )
+    for quantity in ("Oil", "Gas", "Water"):
+        wb = workbook[quantity]
+        g = sodir_series(gross, quantity, "gross")
+        n = sodir_series(net, quantity, "net")
+        result.coverage += [
+            coverage("Workbook (sum of wells)", quantity, listed, wb),
+            coverage("Sodir gross (sum wellbores)", quantity, gross.monthly, g),
+            coverage("Sodir net (saleable)", quantity, net.monthly, n),
+        ]
+        result.ratios += [
+            ratio_summary(quantity, "workbook / gross", wb, g),
+            ratio_summary(quantity, "workbook / net", wb, n),
+            ratio_summary(quantity, "gross / net", g, n),
+        ]
+        if quantity != "Water":
+            months = sorted(set(listed) | set(gross.monthly) | set(net.monthly))
+            result.monthly[quantity] = [
+                (
+                    _period(p),
+                    wb.get(p, 0.0) if p in listed else None,
+                    g.get(p),
+                    n.get(p),
+                )
+                for p in months
+            ]
     return result
 
 
@@ -1013,69 +1112,123 @@ def render_identifiers(matches: list[NameMatch], volve: list[SodirWellbore]) -> 
     )
 
 
-def render_sodir_production(facts: SodirProductionFacts) -> str:
-    production_columns = [c for c in facts.columns if c.startswith("prfPrd")]
-    return "\n\n".join(
-        [
-            f"Table `field_production_monthly`, rows with `prfInformationCarrier` = VOLVE: "
+def render_sodir_production(tables: list[SodirProductionFacts]) -> str:
+    parts = []
+    for facts in tables:
+        production_columns = [c for c in facts.columns if c.startswith("prfPrd")]
+        parts += [
+            f"**Table `{facts.table}`**, rows with `prfInformationCarrier` = VOLVE: "
             f"{facts.rows} months, {facts.first} to {facts.last}.",
             "Columns: " + ", ".join(f"`{c}`" for c in facts.columns),
-            "Units, as encoded in the column names:\n\n"
-            + _table(
-                ["Column", "Unit"],
-                [(c, unit_from_column(c) or "unknown") for c in production_columns],
+            _table(
+                ["Column", "Unit (from the column name)", "Decimal places"],
+                [
+                    (c, unit_from_column(c) or "unknown", facts.decimals.get(c, ""))
+                    for c in production_columns
+                ],
             ),
-            _source("audit_sodir_production"),
         ]
-    )
+    return "\n\n".join([*parts, _source("audit_sodir_production")])
 
 
 def _ratio(value: float | None) -> str:
     return "" if value is None else f"{value:.4f}"
 
 
-def render_comparison(rows: list[ComparisonRow]) -> str:
+def _sm3(value: float | None) -> str:
+    return "no row" if value is None else f"{value:,.0f}"
+
+
+def _month_ratio(a: float | None, b: float | None) -> str:
+    return f"{a / b:.4f}" if a and b else ""
+
+
+def render_comparison(cmp: ProductionComparison) -> str:
+    scales = {"MillSm3": 1e6, "BillSm3": 1e9}
+    resolution = ", ".join(
+        f"`{c}` {d} decimals = {scale * 10**-d:,.0f} Sm3"
+        for c, d in sorted(cmp.decimals.items())
+        for suffix, scale in scales.items()
+        if c.endswith(suffix) and ("Oil" in c or "Gas" in c)
+    )
+    monthly_tables = []
+    for quantity, rows in cmp.monthly.items():
+        table = _table(
+            [
+                "Month",
+                "Workbook Sm3",
+                "Sodir gross Sm3",
+                "Sodir net Sm3",
+                "Workbook / gross",
+                "Workbook / net",
+                "Gross / net",
+            ],
+            [
+                (
+                    month,
+                    _sm3(wb),
+                    _sm3(g),
+                    _sm3(n),
+                    _month_ratio(wb, g),
+                    _month_ratio(wb, n),
+                    _month_ratio(g, n),
+                )
+                for month, wb, g, n in rows
+            ],
+        )
+        monthly_tables.append(
+            f"<details>\n<summary>{quantity}: ratios per month</summary>\n\n{table}\n\n</details>"
+        )
     return "\n\n".join(
         [
-            "Workbook monthly sheet, summed over wellbores per month, versus Sodir "
-            "`field_production_monthly` for VOLVE (converted to Sm3). Ratio = workbook / Sodir, "
-            "over months where both are non-zero. Totals are over the months in the Sodir table; "
-            "the last column counts workbook months with a non-zero volume that Sodir does not "
-            "list.",
+            "Three sources, VOLVE, converted to Sm3: the workbook's monthly sheet summed over "
+            "wellbores; Sodir `field_production_gross_monthly` (sum wellbores, gross); Sodir "
+            "`field_production_monthly` (saleable, net). Produced water has the same column in "
+            "both Sodir tables.",
+            "Months with data per source ('listed' = the source has a row for the month):",
             _table(
                 [
+                    "Source",
                     "Quantity",
-                    "Sodir column",
-                    "Months compared",
-                    "Within 1 %",
-                    "Median ratio",
-                    "Min ratio",
-                    "Max ratio",
-                    "Workbook total Sm3",
-                    "Sodir total Sm3",
-                    "Workbook-only months",
+                    "First",
+                    "Last",
+                    "Months listed",
+                    "Months non-zero",
+                    "Total Sm3",
                 ],
                 [
                     (
-                        r.quantity,
-                        {
-                            "Oil": "prfPrdOilNetMillSm3",
-                            "Gas": "prfPrdGasNetBillSm3",
-                            "Water": "prfPrdProducedWaterInFieldMillSm3",
-                        }[r.quantity],
-                        r.months_compared,
-                        r.months_within_1pct,
-                        _ratio(r.ratio_median),
-                        _ratio(r.ratio_min),
-                        _ratio(r.ratio_max),
-                        f"{r.total_workbook_sm3:,.0f}",
-                        f"{r.total_sodir_sm3:,.0f}",
-                        r.workbook_months_not_in_sodir,
+                        c.source,
+                        c.quantity,
+                        c.first,
+                        c.last,
+                        c.months_listed,
+                        c.months_nonzero,
+                        f"{c.total_sm3:,.0f}",
                     )
-                    for r in rows
+                    for c in cmp.coverage
                 ],
             ),
-            _source("compare_monthly_volumes"),
+            "Ratios, over months where both sides are non-zero:",
+            _table(
+                ["Quantity", "Ratio", "Months compared", "Within 1 %", "Median", "Min", "Max"],
+                [
+                    (
+                        r.quantity,
+                        r.ratio,
+                        r.months_compared,
+                        r.months_within_1pct,
+                        _ratio(r.median),
+                        _ratio(r.minimum),
+                        _ratio(r.maximum),
+                    )
+                    for r in cmp.ratios
+                ],
+            ),
+            f"Resolution of the Sodir figures (largest number of decimals used, as Sm3): "
+            f"{resolution}.",
+            *monthly_tables,
+            _source("workbook_monthly_sums", "sodir_series", "compare_production"),
         ]
     )
 
@@ -1156,7 +1309,8 @@ def build_sections(raw_dir: Path) -> dict[str, str]:
     reports = load_drill_reports(raw_dir)
     sheets = audit_production(raw_dir)
     matches, volve = audit_identifiers(raw_dir, reports)
-    sodir = audit_sodir_production(raw_dir)
+    net = audit_sodir_production(raw_dir, SODIR_PRODUCTION)
+    gross = audit_sodir_production(raw_dir, SODIR_PRODUCTION_GROSS)
     return {
         "ddr-coverage": render_ddr_coverage(
             audit_ddr_coverage(reports), file_date_matches(reports)
@@ -1169,8 +1323,8 @@ def build_sections(raw_dir: Path) -> dict[str, str]:
         "witsml": render_witsml(audit_witsml(raw_dir)),
         "production": render_production(sheets),
         "identifiers": render_identifiers(matches, volve),
-        "sodir-production": render_sodir_production(sodir),
-        "production-comparison": render_comparison(compare_monthly_volumes(raw_dir, sodir)),
+        "sodir-production": render_sodir_production([net, gross]),
+        "production-comparison": render_comparison(compare_production(raw_dir, net, gross)),
         "cira": render_cira(audit_cira(raw_dir)),
     }
 

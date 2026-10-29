@@ -20,10 +20,11 @@ def test_check_header_rejects_error_page(tmp_path: Path) -> None:
         check_header(path, ("fldName",))
 
 
-def test_tables_are_the_four_phase1_exports() -> None:
+def test_tables_are_the_phase1_exports() -> None:
     assert [t.filename for t in TABLES] == [
         "field.csv",
         "field_production_monthly.csv",
+        "field_production_gross_monthly.csv",
         "wellbore_development_all.csv",
         "wellbore_exploration_all.csv",
     ]

@@ -54,6 +54,20 @@ TABLES: tuple[Table, ...] = (
             "prfNpdidInformationCarrier",
         ),
     ),
+    # Field > Table view > Production > Sum wellbores > Monthly - by field
+    # https://factpages.sodir.no/en/field/tableview/production/SumWellbores/Monthly
+    Table(
+        "field_production_gross_monthly",
+        (
+            "prfInformationCarrier",
+            "prfYear",
+            "prfMonth",
+            "prfPrdOilGrossMillSm3",
+            "prfPrdGasGrossBillSm3",
+            "prfPrdProducedWaterInFieldMillSm3",
+            "prfNpdidInformationCarrier",
+        ),
+    ),
     # Wellbore > Table view > Development
     # https://factpages.sodir.no/en/wellbore/TableView/Development
     Table(
