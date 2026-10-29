@@ -1,15 +1,18 @@
-"""Sodir FactPages: download table exports as CSV and check their headers."""
+"""Sodir FactPages: download table exports as CSV, check their headers, and stage wellbores."""
 
 from __future__ import annotations
 
 import csv
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass
+from datetime import date, datetime
 from functools import partial
 from pathlib import Path
 
 from well_ops.ingestion._download import DownloadResult, fetch
 from well_ops.ingestion.manifest import build_entry, utc_now
+from well_ops.ingestion.staging import Column, write_parquet
 
 SOURCE = "Sodir FactPages"
 LICENCE = "NLOD 2.0"
@@ -112,3 +115,78 @@ def download(data_dir: Path, tables: tuple[Table, ...] = TABLES) -> DownloadResu
         result.entries.append(build_entry(dest, data_dir, SOURCE, table.url, LICENCE, utc_now()))
         log.info("Sodir %s ok (header checked)", table.report)
     return result
+
+
+# --------------------------------------------------------------------------------------------
+# Wellbores (ADR 0002 D1): staged to data/staging/sodir/wellbore.parquet
+# --------------------------------------------------------------------------------------------
+
+WELLBORE_TABLES = {
+    "development": Path("sodir/wellbore_development_all.csv"),
+    "exploration": Path("sodir/wellbore_exploration_all.csv"),
+}
+
+WELLBORE_COLUMNS: tuple[Column, ...] = (
+    ("npdid", "BIGINT"),  # wlbNpdidWellbore
+    ("wellbore_name", "VARCHAR"),  # wlbWellboreName
+    ("well_name", "VARCHAR"),  # wlbWell
+    ("field_name", "VARCHAR"),  # wlbField; null when the wellbore belongs to no field
+    ("purpose", "VARCHAR"),  # wlbPurpose
+    ("status", "VARCHAR"),  # wlbStatus
+    ("entry_date", "DATE"),  # wlbEntryDate
+    ("completion_date", "DATE"),  # wlbCompletionDate
+    ("total_depth_m", "DOUBLE"),  # wlbTotalDepth, metres as published
+    ("source_table", "VARCHAR"),  # 'development' or 'exploration'
+)
+
+
+def read_wellbore_rows(raw_dir: Path) -> Iterator[tuple[str, dict[str, str]]]:
+    """Yield (table, row) for every row of the development and exploration wellbore exports."""
+    for table, path in WELLBORE_TABLES.items():
+        with (raw_dir / path).open(encoding="utf-8-sig", newline="") as fh:
+            for row in csv.DictReader(fh):
+                yield table, row
+
+
+@dataclass(frozen=True)
+class SodirWellbore:
+    name: str
+    npdid: str
+    field: str
+
+
+def load_sodir_wellbores(raw_dir: Path) -> list[SodirWellbore]:
+    return [
+        SodirWellbore(row["wlbWellboreName"], row["wlbNpdidWellbore"], row["wlbField"])
+        for _, row in read_wellbore_rows(raw_dir)
+    ]
+
+
+def parse_date(text: str) -> date | None:
+    """FactPages exports dates as dd.mm.yyyy; a blank cell is unknown."""
+    return datetime.strptime(text, "%d.%m.%Y").date() if text.strip() else None
+
+
+def parse_number(text: str) -> float | None:
+    return float(text) if text.strip() else None
+
+
+def wellbore_record(table: str, row: dict[str, str]) -> tuple[object, ...]:
+    return (
+        int(row["wlbNpdidWellbore"]),
+        row["wlbWellboreName"],
+        row["wlbWell"],
+        row["wlbField"] or None,
+        row["wlbPurpose"] or None,
+        row["wlbStatus"] or None,
+        parse_date(row["wlbEntryDate"]),
+        parse_date(row["wlbCompletionDate"]),
+        parse_number(row["wlbTotalDepth"]),
+        table,
+    )
+
+
+def stage_wellbores(raw_dir: Path, staging_dir: Path) -> int:
+    """Write every Sodir wellbore (all fields, not only Volve) and return the row count."""
+    records = [wellbore_record(table, row) for table, row in read_wellbore_rows(raw_dir)]
+    return write_parquet(staging_dir / "sodir" / "wellbore.parquet", WELLBORE_COLUMNS, records)

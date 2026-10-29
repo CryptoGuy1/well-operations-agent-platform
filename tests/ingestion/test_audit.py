@@ -7,8 +7,6 @@ import pytest
 
 from well_ops.ingestion import audit
 from well_ops.ingestion.audit import (
-    NameObservation,
-    SodirWellbore,
     audit_cira_file,
     audit_ddr_activities,
     audit_ddr_codes,
@@ -18,14 +16,19 @@ from well_ops.ingestion.audit import (
     audit_sodir_production,
     audit_witsml,
     compare_production,
-    decode_witsml_name,
     fill_report,
-    match_well_names,
-    normalise_well_name,
-    parse_drill_report,
-    parse_meta_file_info,
     split_code,
     unit_from_column,
+)
+from well_ops.ingestion.identifiers import NameObservation, match_well_names, normalise_well_name
+from well_ops.ingestion.sodir_factpages import SodirWellbore
+from well_ops.ingestion.volve_ddr import parse_drill_report
+from well_ops.ingestion.volve_production import PRODUCTION_XLSX
+from well_ops.ingestion.volve_witsml import (
+    WITSML_DIR,
+    WITSML_ZIP,
+    decode_witsml_name,
+    parse_meta_file_info,
 )
 
 DDR = """<?xml version="1.0" encoding="ISO-8859-1"?>
@@ -152,7 +155,7 @@ def test_match_well_names_prefers_npdid_and_reports_conflicts() -> None:
 
 
 def test_audit_witsml_counts_zip_and_extracted(tmp_path: Path) -> None:
-    root = tmp_path / audit.WITSML_DIR
+    root = tmp_path / WITSML_DIR
     root.mkdir(parents=True)
     well = "Norway-NA-15_$47$_9-F-11"
     files = {
@@ -160,7 +163,7 @@ def test_audit_witsml_counts_zip_and_extracted(tmp_path: Path) -> None:
         f"{well}/1/trajectory/1.xml": "<t/>",
         f"{well}/1/log/1/1/1/00001.xml": "<log>" + "x" * 100 + "</log>",
     }
-    with zipfile.ZipFile(tmp_path / audit.WITSML_ZIP, "w") as archive:
+    with zipfile.ZipFile(tmp_path / WITSML_ZIP, "w") as archive:
         for name, content in files.items():
             archive.writestr(f"server/{name}", content)
     for name in list(files)[:2]:
@@ -178,7 +181,7 @@ def test_audit_witsml_counts_zip_and_extracted(tmp_path: Path) -> None:
 
 
 def _workbook(tmp_path: Path) -> None:
-    path = tmp_path / audit.PRODUCTION_XLSX
+    path = tmp_path / PRODUCTION_XLSX
     path.parent.mkdir(parents=True)
     workbook = openpyxl.Workbook()
     monthly = workbook.active

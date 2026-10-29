@@ -1,4 +1,4 @@
-.PHONY: setup lint test download download-volve audit dbt-build
+.PHONY: setup lint test download download-volve audit stage dbt-build
 
 setup:
 	uv sync
@@ -19,6 +19,9 @@ download-volve:
 
 audit:
 	uv run python scripts/audit.py
+
+stage:
+	uv run python scripts/stage.py
 
 DBT_ARGS = --project-dir warehouse --profiles-dir warehouse
 

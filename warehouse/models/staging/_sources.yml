@@ -1,0 +1,27 @@
+version: 2
+
+# Paths are relative to the repository root, where dbt runs (ADR 0003).
+sources:
+  - name: sodir
+    description: Sodir FactPages tables parsed by src/well_ops/ingestion/sodir_factpages.py.
+    meta:
+      external_location: "data/staging/sodir/{name}.parquet"
+    tables:
+      - name: wellbore
+        description: Every development and exploration wellbore on the Norwegian shelf.
+
+  - name: identifiers
+    description: Source well names resolved by src/well_ops/ingestion/identifiers.py.
+    meta:
+      external_location: "data/staging/identifiers/{name}.parquet"
+    tables:
+      - name: wellbore_alias
+        description: One row per well name found in a Volve source (ADR 0002 D1, D2).
+
+  - name: evaluation
+    description: Committed evaluation files.
+    tables:
+      - name: splits
+        description: Held-out draw of ADR 0002 D8.
+        meta:
+          external_location: "evaluation/splits.json"

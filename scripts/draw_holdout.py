@@ -20,7 +20,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from well_ops.ingestion.audit import load_drill_reports, normalise_well_name
+from well_ops.ingestion.identifiers import normalise_well_name
+from well_ops.ingestion.volve_ddr import load_drill_reports
 
 SEED = 20261028
 HELD_OUT = 5

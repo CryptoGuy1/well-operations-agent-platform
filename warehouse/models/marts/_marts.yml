@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: dim_wellbore
+    description: >
+      One row per wellbore key (ADR 0002 D1): every Sodir wellbore and every technical sidetrack
+      found in the Volve sources. is_heldout marks the wellbores held out by D8.
+    columns:
+      - name: wellbore_key
+        data_tests: [unique, not_null]
+      - name: wellbore_name
+        data_tests: [not_null]
+      - name: parent_key
+        data_tests:
+          - not_null:
+              config:
+                where: is_technical_sidetrack
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: is_technical_sidetrack
+        data_tests: [not_null]
+      - name: in_volve_field
+        data_tests: [not_null]
+      - name: is_heldout
+        data_tests: [not_null]

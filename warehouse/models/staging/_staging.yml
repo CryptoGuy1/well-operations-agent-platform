@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: stg_sodir__wellbore
+    description: Sodir wellbores, renamed and cast. wellbore_key is the NPDID as text (D1).
+    columns:
+      - name: wellbore_key
+        data_tests: [unique, not_null]
+      - name: npdid
+        data_tests: [unique, not_null]
+      - name: source_table
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [development, exploration]
+
+  - name: stg_identifiers__wellbore_alias
+    description: Every well name found in a Volve source, with its D1 key and D2 status.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "source || '|' || source_name"
+    columns:
+      - name: match_method
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [npdid, name, none]
+      - name: status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [wellbore, planning_object, not_a_wellbore, unresolved]
+      - name: wellbore_key
+        description: Set exactly when status is 'wellbore'.
+        data_tests:
+          - not_null:
+              config:
+                where: "status = 'wellbore'"
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+              config:
+                where: "status = 'wellbore'"
+
+  - name: stg_evaluation__heldout_wellbore
+    description: D1 keys of the held-out wellbores (ADR 0002 D8). Keys only.
+    columns:
+      - name: wellbore_key
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key

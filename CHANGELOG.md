@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ADR 0003 (warehouse and tooling) and the dbt project under `warehouse/` with the dbt-duckdb
+  adapter; `make dbt-build` builds and tests `data/warehouse/well_ops.duckdb`.
+- `make stage`: parses Sodir wellbores to `data/staging/sodir/wellbore.parquet` and every Volve
+  source well name to `data/staging/identifiers/wellbore_alias.parquet`, with its D1 key and D2
+  status (ADR 0002).
+- dbt models `stg_sodir__wellbore`, `stg_identifiers__wellbore_alias`,
+  `stg_evaluation__heldout_wellbore` and `dim_wellbore`, with key and relationship tests.
+
+### Changed
+
+- Name matching moved from the audit to `well_ops.ingestion.identifiers`; drilling report,
+  production workbook and WITSML name readers moved to per-source modules. The audit report is
+  unchanged.
+
 ## [0.1.0-data-audit] - 2026-10-28
 
 ### Added

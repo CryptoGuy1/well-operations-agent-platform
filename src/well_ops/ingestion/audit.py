@@ -10,113 +10,34 @@ import csv
 import itertools
 import re
 import statistics
-import xml.etree.ElementTree as ET
 import zipfile
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
-from functools import cache
 from pathlib import Path
-from typing import Any
 
-import openpyxl
+from well_ops.ingestion.identifiers import NameMatch, collect_well_names, match_well_names
+from well_ops.ingestion.sodir_factpages import SodirWellbore, load_sodir_wellbores
+from well_ops.ingestion.volve_ddr import DrillReport, load_drill_reports
+from well_ops.ingestion.volve_production import PRODUCTION_XLSX, sheet_rows
+from well_ops.ingestion.volve_witsml import (
+    WITSML_DIR,
+    WITSML_ZIP,
+    decode_witsml_name,
+    parse_meta_file_info,
+)
 
-WITSML_NS = "{http://www.witsml.org/schemas/1series}"
 SENTINEL = "-999.99"
 
-DDR_DIR = Path("volve/Well_technical_data/Daily Drilling Report - XML Version")
-WITSML_DIR = Path("volve/WITSML Realtime drilling data")
-WITSML_ZIP = WITSML_DIR / "Volve - Real Time drilling data 13.05.2018.zip"
-PRODUCTION_XLSX = Path("volve/Production_data/Volve production data.xlsx")
-PICKS_DAT = Path("volve/Geophysical_Interpretations/Wells/Well_picks_Volve_v1.dat")
-PERFORATIONS_DAT = Path("volve/Geophysical_Interpretations/Wells/Well_perforations_Volve.dat")
-EDM_XML = Path("volve/Well_technical_data/EDM.XML/Volve F.edm.xml")
-SODIR_DEVELOPMENT = Path("sodir/wellbore_development_all.csv")
-SODIR_EXPLORATION = Path("sodir/wellbore_exploration_all.csv")
 SODIR_PRODUCTION = Path("sodir/field_production_monthly.csv")
 SODIR_PRODUCTION_GROSS = Path("sodir/field_production_gross_monthly.csv")
 CIRA_DIR = Path("cira")
 
 
-def _tag(element: ET.Element) -> str:
-    return element.tag.replace(WITSML_NS, "")
-
-
-def _text(element: ET.Element, name: str) -> str | None:
-    return element.findtext(f"{WITSML_NS}{name}")
-
-
 # --------------------------------------------------------------------------------------------
 # Volve daily drilling reports (questions 1-4)
 # --------------------------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class Activity:
-    start: datetime
-    end: datetime
-    fields: dict[str, str]
-
-    @property
-    def duration(self) -> timedelta:
-        return self.end - self.start
-
-
-@dataclass(frozen=True)
-class DrillReport:
-    file: str
-    wellbore: str
-    npdid: str | None
-    start: datetime
-    end: datetime
-    spud: datetime | None
-    status: dict[str, tuple[str, str | None, str | None]]  # element -> (text, uom, datum)
-    activities: list[Activity]
-
-
-def parse_drill_report(path: Path) -> DrillReport:
-    root = ET.parse(path).getroot()
-    report = root.find(f"{WITSML_NS}drillReport")
-    if report is None:
-        raise ValueError(f"{path.name}: no drillReport element")
-    npdid = None
-    for alias in report.findall(f"{WITSML_NS}wellboreAlias"):
-        if _text(alias, "namingSystem") == "NPD number":
-            npdid = _text(alias, "name")
-    status: dict[str, tuple[str, str | None, str | None]] = {}
-    status_element = report.find(f"{WITSML_NS}statusInfo")
-    if status_element is not None:
-        for child in status_element:
-            status[_tag(child)] = ((child.text or "").strip(), child.get("uom"), child.get("datum"))
-    spud_text = report.findtext(f"{WITSML_NS}wellboreInfo/{WITSML_NS}dTimSpud")
-    activities = []
-    for element in report.findall(f"{WITSML_NS}activity"):
-        fields = {_tag(child): (child.text or "").strip() for child in element}
-        for child in element:
-            if child.get("uom"):
-                fields[f"{_tag(child)}@uom"] = child.get("uom", "")
-        activities.append(
-            Activity(
-                start=datetime.fromisoformat(fields["dTimStart"]),
-                end=datetime.fromisoformat(fields["dTimEnd"]),
-                fields=fields,
-            )
-        )
-    return DrillReport(
-        file=path.name,
-        wellbore=_text(report, "nameWellbore") or "",
-        npdid=npdid,
-        start=datetime.fromisoformat(_text(report, "dTimStart") or ""),
-        end=datetime.fromisoformat(_text(report, "dTimEnd") or ""),
-        spud=datetime.fromisoformat(spud_text) if spud_text else None,
-        status=status,
-        activities=activities,
-    )
-
-
-def load_drill_reports(raw_dir: Path) -> list[DrillReport]:
-    return [parse_drill_report(p) for p in sorted((raw_dir / DDR_DIR).glob("*.xml"))]
 
 
 @dataclass(frozen=True)
@@ -261,23 +182,6 @@ DEPTH_AND_HOLE_ELEMENTS = (
 # --------------------------------------------------------------------------------------------
 
 
-def parse_meta_file_info(text: str) -> dict[str, str]:
-    """MetaFileInfo.txt lines are '<folder>  <name>  <id>' separated by two spaces."""
-    mapping = {}
-    for line in text.splitlines():
-        parts = [p for p in line.split("  ") if p]
-        if len(parts) >= 2:
-            mapping[parts[0].strip()] = parts[1].strip()
-    return mapping
-
-
-def decode_witsml_name(name: str) -> str:
-    """Folder and file names encode a character as '_$NN$_' (NN = its code, e.g. 47 = '/').
-    Trailing '(id)' groups are dropped."""
-    name = re.sub(r"\s*\([^)]*\)", "", name)
-    return re.sub(r"_?\$(\d+)\$_?", lambda m: chr(int(m.group(1))), name).strip()
-
-
 @dataclass
 class WitsmlInventory:
     zip_files: int = 0
@@ -350,19 +254,10 @@ class SheetFacts:
     null_text: dict[str, int] = field(default_factory=dict)
 
 
-@cache
-def _sheet_rows(path: Path) -> dict[str, list[tuple[Any, ...]]]:
-    workbook = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    try:
-        return {ws.title: list(ws.iter_rows(values_only=True)) for ws in workbook.worksheets}
-    finally:
-        workbook.close()
-
-
 def audit_production(raw_dir: Path) -> list[SheetFacts]:
     """Question 6: per sheet, columns, units (if the sheet states them), wells and date range."""
     facts = []
-    for name, rows in _sheet_rows(raw_dir / PRODUCTION_XLSX).items():
+    for name, rows in sheet_rows(raw_dir / PRODUCTION_XLSX).items():
         header = [str(c) for c in rows[0]]
         body = rows[1:]
         units_row = None
@@ -408,162 +303,13 @@ def audit_production(raw_dir: Path) -> list[SheetFacts]:
 # --------------------------------------------------------------------------------------------
 
 
-def normalise_well_name(raw: str) -> str:
-    """Mechanical normalisation only: decode '$NN$', drop a leading 'NO ' and a trailing
-    ' - Main Wellbore', single spaces, and separate a letter suffix glued to the well number
-    ('F-15A' -> 'F-15 A')."""
-    name = decode_witsml_name(raw)
-    name = re.sub(r"^NO\s+", "", name)
-    name = re.sub(r"\s+-\s+Main Wellbore$", "", name)
-    name = re.sub(r"\s+", " ", name).strip()
-    return re.sub(r"(?<=\d)([A-Z]{1,3}\d?)$", r" \1", name)
-
-
-@dataclass(frozen=True)
-class NameObservation:
-    source: str
-    raw: str
-    npdid: str | None = None
-
-
-def well_names_ddr(reports: list[DrillReport]) -> set[NameObservation]:
-    return {NameObservation("DDR", r.wellbore, r.npdid) for r in reports}
-
-
-def well_names_witsml(raw_dir: Path) -> set[NameObservation]:
-    observed = set()
-    with zipfile.ZipFile(raw_dir / WITSML_ZIP) as archive:
-        for info in archive.infolist():
-            parts = info.filename.split("/")
-            if parts[-1] == "MetaFileInfo.txt" and len(parts) in (2, 3):
-                text = archive.read(info).decode("utf-8", errors="replace")
-                for name in parse_meta_file_info(text).values():
-                    observed.add(NameObservation("WITSML", decode_witsml_name(name)))
-    return observed
-
-
-def well_names_production(raw_dir: Path) -> set[NameObservation]:
-    observed = set()
-    rows = _sheet_rows(raw_dir / PRODUCTION_XLSX)
-    for _name, sheet_rows in rows.items():
-        header = [str(c) for c in sheet_rows[0]]
-        if "WELL_BORE_CODE" in header:
-            for row in sheet_rows[1:]:
-                npdid = str(row[header.index("NPD_WELL_BORE_CODE")])
-                observed.add(NameObservation("Production daily", str(row[1]), npdid))
-                observed.add(
-                    NameObservation(
-                        "Production daily", str(row[header.index("NPD_WELL_BORE_NAME")]), npdid
-                    )
-                )
-        elif "Wellbore name" in header:
-            for row in sheet_rows[2:]:
-                observed.add(
-                    NameObservation(
-                        "Production monthly", str(row[0]), str(row[header.index("NPDCode")])
-                    )
-                )
-    return observed
-
-
-def well_names_picks(raw_dir: Path) -> set[NameObservation]:
-    text = (raw_dir / PICKS_DAT).read_text(encoding="latin-1")
-    return {
-        NameObservation("Well picks", m.group(1).strip())
-        for m in re.finditer(r"^Well (.+)$", text, flags=re.M)
-    }
-
-
-def well_names_perforations(raw_dir: Path) -> set[NameObservation]:
-    lines = (raw_dir / PERFORATIONS_DAT).read_text(encoding="latin-1").splitlines()
-    header = next(line for line in lines if line.startswith("Row"))
-    start = header.index("Well name")
-    end = header.index("Top formation")
-    return {
-        NameObservation("Well perforations", line[start:end].strip())
-        for line in lines
-        if line[:1].isdigit()
-    }
-
-
-def well_names_edm(raw_dir: Path) -> set[NameObservation]:
-    """Only the name attributes are read; EDM user and audit attributes are ignored."""
-    observed = set()
-    for _, element in ET.iterparse(raw_dir / EDM_XML, events=("end",)):
-        if element.tag in ("CD_WELL", "CD_WELLBORE"):
-            for attribute in ("well_legal_name", "wellbore_name"):
-                value = element.get(attribute)
-                if value:
-                    observed.add(NameObservation(f"EDM {attribute}", value.strip()))
-        element.clear()
-    return observed
-
-
-@dataclass(frozen=True)
-class SodirWellbore:
-    name: str
-    npdid: str
-    field: str
-
-
-def load_sodir_wellbores(raw_dir: Path) -> list[SodirWellbore]:
-    wellbores = []
-    for path in (SODIR_DEVELOPMENT, SODIR_EXPLORATION):
-        with (raw_dir / path).open(encoding="utf-8-sig", newline="") as fh:
-            for row in csv.DictReader(fh):
-                wellbores.append(
-                    SodirWellbore(row["wlbWellboreName"], row["wlbNpdidWellbore"], row["wlbField"])
-                )
-    return wellbores
-
-
-@dataclass(frozen=True)
-class NameMatch:
-    source: str
-    raw: str
-    canonical: str | None
-    method: str  # "NPDID", "name", or "unmatched"
-    conflict: str | None = None
-
-
-def match_well_names(
-    observations: Iterable[NameObservation], sodir: list[SodirWellbore]
-) -> list[NameMatch]:
-    """Canonical name = Sodir wlbWellboreName. Match on NPDID when the source carries one,
-    otherwise on the normalised name. A name match that disagrees with an NPDID is reported."""
-    by_npdid = {w.npdid: w.name for w in sodir}
-    by_name = {w.name: w.name for w in sodir}
-    matches = []
-    for obs in observations:
-        normalised = normalise_well_name(obs.raw)
-        name_hit = by_name.get(normalised)
-        npdid_hit = by_npdid.get(obs.npdid) if obs.npdid else None
-        if npdid_hit:
-            conflict = None
-            if name_hit and name_hit != npdid_hit:
-                conflict = f"name matches {name_hit}"
-            matches.append(NameMatch(obs.source, obs.raw, npdid_hit, "NPDID", conflict))
-        elif name_hit:
-            matches.append(NameMatch(obs.source, obs.raw, name_hit, "name"))
-        else:
-            matches.append(NameMatch(obs.source, obs.raw, None, "unmatched"))
-    return sorted(matches, key=lambda m: (m.canonical or "~", m.source, m.raw))
-
-
 def audit_identifiers(
     raw_dir: Path, reports: list[DrillReport]
 ) -> tuple[list[NameMatch], list[SodirWellbore]]:
     """Question 7: all well names in Volve sources and Volve-field wellbores in Sodir."""
-    observations: set[NameObservation] = set()
-    observations |= well_names_ddr(reports)
-    observations |= well_names_witsml(raw_dir)
-    observations |= well_names_production(raw_dir)
-    observations |= well_names_picks(raw_dir)
-    observations |= well_names_perforations(raw_dir)
-    observations |= well_names_edm(raw_dir)
     sodir = load_sodir_wellbores(raw_dir)
     volve = sorted((w for w in sodir if w.field.upper() == "VOLVE"), key=lambda w: w.name)
-    return match_well_names(observations, sodir), volve
+    return match_well_names(collect_well_names(raw_dir, reports), sodir), volve
 
 
 # --------------------------------------------------------------------------------------------
@@ -642,7 +388,7 @@ def workbook_monthly_sums(raw_dir: Path) -> tuple[set[Period], dict[str, dict[Pe
 
     Cells that are not numbers (the text 'NULL') contribute nothing.
     """
-    rows = _sheet_rows(raw_dir / PRODUCTION_XLSX)["Monthly Production Data"]
+    rows = sheet_rows(raw_dir / PRODUCTION_XLSX)["Monthly Production Data"]
     header = [str(c) for c in rows[0]]
     listed: set[Period] = set()
     sums: dict[str, dict[Period, float]] = {"Oil": {}, "Gas": {}, "Water": {}}
