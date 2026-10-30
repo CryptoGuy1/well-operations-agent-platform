@@ -4,7 +4,7 @@ Date: 2026-10-30
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -31,6 +31,32 @@ The constraints are:
   lives in `src/well_ops/connectors/` and is built with the official MCP Python SDK.
 - A server reads only the DuckDB warehouse (`data/warehouse/well_ops.duckdb`), opened in read-only
   mode. It never reads `data/raw/` or `data/staging/`, and never writes.
+
+### Sodir connector: write our own
+
+The published `sodir-mcp` package (version 0.1.0, MIT licence, the only release) was reviewed
+from its source distribution before writing a Sodir connector. It exposes two read-only tools,
+`wellbore_facts` and `field_production_monthly` (saleable, net volumes). Its code is careful:
+typed inputs that are never echoed back, structured errors, row and size caps, a cache opened
+read-only, and a download step that contacts only `factpages.sodir.no`.
+
+It is not reused or forked, and the Sodir connector is written in this repository, because:
+
+- It reads its own copy of the Sodir tables, downloaded by its `refresh` command into a SQLite
+  cache in the user's cache folder (or, optionally, from another project's PostgreSQL tables).
+  The answers could then differ from the warehouse that the claim checker verifies against.
+- It has no row-level evidence ids. Its `source` object carries a query id and parameters, plus
+  a trace id that is random on every call.
+- It has no held-out guard: `wellbore_facts` answers for any wellbore.
+- It has no redaction filter. It does flag instruction-like text and strips control characters.
+- It does not know the D1 keys of technical sidetracks (`<npdid>:T<n>`), so 15/9-F-11 T2 cannot
+  be resolved. It also does not serve gross production, which D9 compares with net.
+
+A fork would replace the store, the name resolution, the outputs and the guards, which is most of
+the package. Some of its ideas are adopted, and are written anew rather than copied: structured
+errors without echoing the input, read-only tool annotations, and notes on what Sodir dates mean
+(the completion date is the end of drilling, not production start-up). If any of its code is
+copied later, its MIT notice is added to `NOTICE`.
 
 ### Tool rules
 
