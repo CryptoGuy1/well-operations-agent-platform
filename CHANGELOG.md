@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ADR 0004 (agent architecture): one MCP server per source over the read-only warehouse, typed
+  tools with evidence ids, held-out guard, redaction, plain tool-use loop, structured output,
+  deterministic claim checker and append-only run log with replay.
+- `well_ops.settings`: runtime configuration from `WELL_OPS_*` environment variables and `.env`.
+- Empty `well_ops.connectors` and `well_ops.agents` packages; the MCP and model-provider SDKs and
+  `pydantic-settings` dependencies.
+
 ## [0.2.0-platform] - 2026-10-30
 
 ### Added
