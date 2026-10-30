@@ -12,7 +12,7 @@ import re
 import statistics
 import zipfile
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -27,6 +27,7 @@ from well_ops.ingestion.volve_witsml import (
     decode_witsml_name,
     parse_meta_file_info,
 )
+from well_ops.markdown import table as _table
 
 SODIR_PRODUCTION = Path("sodir/field_production_monthly.csv")
 SODIR_PRODUCTION_GROSS = Path("sodir/field_production_gross_monthly.csv")
@@ -596,12 +597,6 @@ def audit_cira(raw_dir: Path) -> list[CiraFileFacts]:
 # --------------------------------------------------------------------------------------------
 
 
-def _table(header: list[str], rows: Iterable[Sequence[object]]) -> str:
-    lines = ["| " + " | ".join(header) + " |", "|" + "|".join("---" for _ in header) + "|"]
-    lines += ["| " + " | ".join(str(c).replace("|", "\\|") for c in row) + " |" for row in rows]
-    return "\n".join(lines)
-
-
 def _source(*functions: str) -> str:
     return "Computed by " + ", ".join(f"`well_ops.ingestion.audit.{f}`" for f in functions) + "."
 
@@ -1066,24 +1061,3 @@ def build_sections(raw_dir: Path) -> dict[str, str]:
         "production-comparison": render_comparison(compare_production(raw_dir, net, gross)),
         "cira": render_cira(audit_cira(raw_dir)),
     }
-
-
-_MARKER = re.compile(r"(<!-- audit:([a-z-]+) -->\n)(?:.*?\n)?(<!-- /audit:\2 -->)", re.S)
-
-
-def fill_report(template: str, sections: dict[str, str]) -> str:
-    """Replace the text between `<!-- audit:NAME -->` and `<!-- /audit:NAME -->` markers."""
-    found = set()
-
-    def replace(match: re.Match[str]) -> str:
-        name = match.group(2)
-        if name not in sections:
-            raise KeyError(f"no audit section named {name!r}")
-        found.add(name)
-        return f"{match.group(1)}{sections[name]}\n{match.group(3)}"
-
-    filled = _MARKER.sub(replace, template)
-    missing = set(sections) - found
-    if missing:
-        raise KeyError(f"report has no markers for {sorted(missing)}")
-    return filled

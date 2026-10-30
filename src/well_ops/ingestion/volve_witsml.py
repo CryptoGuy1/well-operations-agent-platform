@@ -664,11 +664,27 @@ def stage_log_values(key_dir: Path, key: str, out_dir: Path) -> tuple[int, int, 
     return len(chunks), rows, nulled
 
 
+VALUE_COUNT_COLUMNS: tuple[Column, ...] = (
+    ("wellbore_key", "VARCHAR"),
+    ("files", "INTEGER"),
+    ("rows", "BIGINT"),
+    ("values_nulled", "BIGINT"),  # values equal to a null value, read as null
+)
+
+
 def stage_witsml_log_values(raw_dir: Path, staging_dir: Path) -> dict[str, tuple[int, int, int]]:
-    """Stage values for every extracted wellbore; return (files, rows, nulled) by key."""
+    """Stage values for every extracted wellbore; return (files, rows, nulled) by key.
+
+    The counts are also written to witsml_log/log_value_count.parquet for the quality report.
+    """
     root = raw_dir / LOG_DIR
     result = {}
     for key_dir in sorted(p for p in root.glob("*") if p.is_dir()) if root.exists() else []:
         out_dir = staging_dir / LOG_VALUES_DIR / key_dir.name
         result[key_dir.name] = stage_log_values(key_dir, key_dir.name, out_dir)
+    write_parquet(
+        staging_dir / "witsml_log" / "log_value_count.parquet",
+        VALUE_COUNT_COLUMNS,
+        [(key, *counts) for key, counts in result.items()],
+    )
     return result

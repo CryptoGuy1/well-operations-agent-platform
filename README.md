@@ -4,7 +4,7 @@ Approval-gated agents that do engineering work on offshore field data: post-well
 lost-time investigations and records reconciliation. Every claim an agent makes is checked against
 the source data, and every run is recorded in an append-only audit log that can be replayed.
 
-**Status: Phase 1, data audit**
+**Status: Phase 2: data platform**
 
 ## Data sources
 
@@ -26,6 +26,16 @@ make setup   # install dependencies
 make lint    # ruff and mypy
 make test    # pytest
 ```
+
+With the data downloaded into `data/raw/` (`make download`, `make download-volve`):
+
+```sh
+make rebuild   # parse data/raw/, then build and test the DuckDB warehouse with dbt
+make quality   # write docs/data/data-quality-report.md
+```
+
+See [docs/architecture.md](docs/architecture.md) for the layers and data flow, and
+[docs/data/](docs/data/) for the data audit and data-quality reports.
 
 ## Licence
 

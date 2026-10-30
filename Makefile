@@ -1,4 +1,5 @@
-.PHONY: setup lint test download download-volve audit stage extract-log dbt-build
+.PHONY: setup lint test download download-volve audit stage extract-log dbt-build \
+	dbt-compile rebuild quality
 
 setup:
 	uv sync
@@ -33,3 +34,19 @@ DBT_ARGS = --project-dir warehouse --profiles-dir warehouse
 dbt-build:
 	mkdir -p data/warehouse
 	uv run dbt build $(DBT_ARGS)
+
+# Compiles the models without data (used in CI).
+dbt-compile:
+	mkdir -p data/warehouse
+	uv run dbt compile $(DBT_ARGS)
+
+# From data/raw/ to a tested warehouse: delete staging and the database, parse, build and test.
+# Real-time logs are restaged for the wellbores already extracted with make extract-log.
+rebuild:
+	rm -rf data/staging
+	rm -f data/warehouse/well_ops.duckdb data/warehouse/well_ops.duckdb.wal
+	$(MAKE) stage
+	$(MAKE) dbt-build
+
+quality:
+	uv run python scripts/quality.py

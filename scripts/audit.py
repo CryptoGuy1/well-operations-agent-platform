@@ -10,7 +10,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from well_ops.ingestion.audit import build_sections, fill_report
+from well_ops.ingestion.audit import build_sections
+from well_ops.markdown import fill_report
 
 
 def main(argv: list[str] | None = None) -> int:

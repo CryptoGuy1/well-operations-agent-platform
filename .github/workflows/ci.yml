@@ -22,3 +22,5 @@ jobs:
         run: uv run mypy
       - name: Pytest
         run: uv run pytest
+      - name: dbt compile (no data)
+        run: make dbt-compile

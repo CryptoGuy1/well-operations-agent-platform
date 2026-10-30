@@ -104,3 +104,11 @@ The constraints are:
   connectors must open the warehouse read-only.
 - Moving the warehouse to a server database later would mean changing the dbt adapter and
   reviewing DuckDB-specific SQL, but the layer structure and tests would carry over.
+
+## Amendments
+
+### 2026-10-30
+
+Real-time WITSML log values are staged in Phase 2 for wellbores extracted on demand (ADR 0002 D6),
+currently 15/9-F-11 T2 only; make rebuild re-stages them from extracted wellbores. This corrects the
+earlier statement that logs are out of Phase 2 scope.

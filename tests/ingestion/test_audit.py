@@ -16,7 +16,6 @@ from well_ops.ingestion.audit import (
     audit_sodir_production,
     audit_witsml,
     compare_production,
-    fill_report,
     unit_from_column,
 )
 from well_ops.ingestion.identifiers import NameObservation, match_well_names, normalise_well_name
@@ -293,19 +292,3 @@ def test_audit_cira_file_handles_semicolons_and_gaps(tmp_path: Path) -> None:
 def test_unit_from_column() -> None:
     assert unit_from_column("prfPrdGasNetBillSm3") == "billion Sm3"
     assert unit_from_column("prfYear") == ""
-
-
-def test_fill_report_replaces_only_marked_sections() -> None:
-    template = "# Title\n\n<!-- audit:a -->\nold\n<!-- /audit:a -->\n\nhand text\n"
-
-    filled = fill_report(template, {"a": "new"})
-
-    assert filled == "# Title\n\n<!-- audit:a -->\nnew\n<!-- /audit:a -->\n\nhand text\n"
-    assert fill_report(filled, {"a": "new"}) == filled
-
-
-def test_fill_report_rejects_missing_or_unknown_sections() -> None:
-    with pytest.raises(KeyError, match="no markers"):
-        fill_report("text", {"a": "x"})
-    with pytest.raises(KeyError, match="no audit section"):
-        fill_report("<!-- audit:b -->\n<!-- /audit:b -->", {})

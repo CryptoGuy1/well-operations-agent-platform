@@ -41,9 +41,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `data/staging/witsml_log/`, curve values to one Parquet file per log under
   `data/staging/witsml_log_values/<key>/` (dbt view `stg_witsml__log_value`), and
   `int_witsml__log_flag` flags logs outside the drilling-report period.
+- `make rebuild`: deletes `data/staging/` and the warehouse, then stages every source and runs
+  `dbt build`; fails on any test failure.
+- `make quality`: computes `docs/data/data-quality-report.md` (row counts, nulls by column, values
+  read as null, flag counts, daily unit check and dbt test results; aggregate only) with
+  `well_ops.warehouse.quality`.
+- `docs/architecture.md`: layers and data flow.
+- CI compiles the dbt project without data (`make dbt-compile`).
 
 ### Changed
 
+- ADR 0003 amended (2026-10-30): real-time log values are staged in Phase 2 for wellbores
+  extracted on demand.
+- Report helpers (`fill_report`, `table`) moved from the audit to `well_ops.markdown`; the audit
+  report is unchanged.
 - ADR 0002 amended (2026-10-30): D3 also treats -999.25, the WITSML null value, as missing.
 - ADR 0002 amended: D4 uses two spud flags (`before_sodir_spud`, `before_report_spud`), and
   `depth_not_recorded` applies to the status `md` only.

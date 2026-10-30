@@ -255,3 +255,19 @@ def test_stage_log_values(tmp_path: Path) -> None:
         (datetime(2014, 4, 7, 6, 0, 10), 1501.0, 75.0, None, None),
     ]
     assert not list(out.parent.glob("*.part"))
+
+
+def test_stage_witsml_log_values_records_counts(tmp_path: Path) -> None:
+    from well_ops.ingestion.volve_witsml import LOG_DIR, stage_witsml_log_values
+
+    log_dir = tmp_path / "raw" / LOG_DIR / "90001" / "w" / "1" / "log" / "2" / "5" / "1"
+    log_dir.mkdir(parents=True)
+    (log_dir / "00001.xml").write_text(
+        value_chunk("Time,GR", ["2014-04-07T06:00:00.000Z,-999.25"]), encoding="utf-8"
+    )
+
+    result = stage_witsml_log_values(tmp_path / "raw", tmp_path / "staging")
+
+    assert result == {"90001": (1, 1, 1)}
+    counts = tmp_path / "staging" / "witsml_log" / "log_value_count.parquet"
+    assert duckdb.connect().execute(f"select * from '{counts}'").fetchall() == [("90001", 1, 1, 1)]
