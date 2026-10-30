@@ -9,6 +9,10 @@ sources:
     tables:
       - name: wellbore
         description: Every development and exploration wellbore on the Norwegian shelf.
+      - name: field_production_net_monthly
+        description: Saleable (net) production per field and month; fuel and flare deducted.
+      - name: field_production_gross_monthly
+        description: Sum-wellbores (gross) production per field and month.
 
   - name: identifiers
     description: Source well names resolved by src/well_ops/ingestion/identifiers.py.
@@ -27,6 +31,18 @@ sources:
         description: One row per drillReport file. Timestamps in UTC; -999.99 is null (D3, D5).
       - name: activity
         description: One row per activity in a report.
+
+  - name: production
+    description: >
+      Volve production workbook parsed by src/well_ops/ingestion/volve_production.py. The text
+      NULL and empty cells are null, with the columns listed in nulled_columns (D3).
+    meta:
+      external_location: "data/staging/production/{name}.parquet"
+    tables:
+      - name: daily
+        description: One row per wellbore and day. The sheet states no units.
+      - name: monthly
+        description: One row per wellbore and month. The sheet's units row states hrs and Sm3.
 
   - name: evaluation
     description: Committed evaluation files.

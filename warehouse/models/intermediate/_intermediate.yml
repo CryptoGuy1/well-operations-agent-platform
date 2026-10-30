@@ -81,3 +81,72 @@ models:
                 to: ref('int_ddr__hole_section')
                 field: section_id
 
+  - name: int_production__daily_units_check
+    description: >
+      Workbook daily volumes summed per wellbore and month (oil_daily_sm3, gas_daily_sm3,
+      water_daily_sm3, from staged oil_volume, gas_volume, water_volume), against the monthly
+      sheet (Sm3), with ratios daily / monthly where both sides are non-zero. Rule (ADR 0002 D9): a wellbore-month counts as non-zero for a quantity
+      when either side is non-zero; it agrees when both are non-zero and the ratio is within 1 %
+      of 1. If oil, gas and water each agree in at least 95 % of their non-zero months,
+      daily_volume_unit is 'Sm3'; otherwise 'unknown'. Months present in one sheet only count as
+      non-zero and not agreeing. Agreement is exact in every month, which indicates the monthly
+      sheet is aggregated from the daily sheet; the check therefore confirms the daily sheet uses
+      the monthly sheet's stated unit (Sm3), not an independent measurement.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "wellbore_key || '|' || month_start"
+    columns:
+      - name: wellbore_key
+        data_tests: [not_null]
+      - name: month_start
+        data_tests: [not_null]
+      - name: daily_volume_unit
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Sm3', 'unknown']
+      - name: oil_ratio
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: oil_daily_sm3
+                denominator: oil_monthly_sm3
+      - name: gas_ratio
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: gas_daily_sm3
+                denominator: gas_monthly_sm3
+      - name: water_ratio
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: water_daily_sm3
+                denominator: water_monthly_sm3
+
+  - name: int_production__daily_flag
+    description: >
+      Data-quality flags on workbook daily rows, one row per flag per wellbore and day. Flags
+      mark doubtful records; values are kept as published. negative_volume: oil_sm3, gas_sm3,
+      water_sm3 or water_injected_sm3 (staged oil_volume, gas_volume, water_volume,
+      water_injected_volume) is below zero; detail lists the negative quantities.
+    columns:
+      - name: daily_flag_id
+        data_tests: [unique, not_null]
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: production_date
+        data_tests: [not_null]
+      - name: flag
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [negative_volume]

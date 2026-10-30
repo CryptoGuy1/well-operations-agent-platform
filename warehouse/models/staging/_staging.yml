@@ -112,3 +112,63 @@ models:
                   - moving
                   - plug abandon
                   - workover
+
+  - name: stg_production__daily
+    description: >
+      Volve workbook daily sheet, one row per wellbore and day (D3). Volume units are decided by
+      int_production__daily_units_check (D9).
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "wellbore_key || '|' || production_date"
+    columns:
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: production_date
+        data_tests: [not_null]
+
+  - name: stg_production__monthly
+    description: Volve workbook monthly sheet, one row per wellbore and month, in Sm3 (D3).
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "wellbore_key || '|' || month_start"
+    columns:
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: month_start
+        data_tests: [not_null]
+
+  - name: stg_sodir__field_production_net_monthly
+    description: Sodir saleable (net) production, all fields; units as published.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "field_npdid || '|' || month_start"
+    columns:
+      - name: field_npdid
+        data_tests: [not_null]
+      - name: month_start
+        data_tests: [not_null]
+
+  - name: stg_sodir__field_production_gross_monthly
+    description: Sodir sum-wellbores (gross) production, all fields; units as published.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "field_npdid || '|' || month_start"
+    columns:
+      - name: field_npdid
+        data_tests: [not_null]
+      - name: month_start
+        data_tests: [not_null]

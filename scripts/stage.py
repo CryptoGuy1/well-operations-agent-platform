@@ -11,8 +11,9 @@ from collections import Counter
 from pathlib import Path
 
 from well_ops.ingestion.identifiers import stage_aliases
-from well_ops.ingestion.sodir_factpages import stage_wellbores
+from well_ops.ingestion.sodir_factpages import stage_field_production, stage_wellbores
 from well_ops.ingestion.volve_ddr import load_drill_reports, stage_drill_reports
+from well_ops.ingestion.volve_production import stage_production
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -31,6 +32,10 @@ def main(argv: list[str] | None = None) -> int:
         f"ddr/report.parquet: {ddr.reports} rows ({ddr.wellbore_keys} wellbore keys), "
         f"ddr/activity.parquet: {ddr.activities} rows"
     )
+    daily, monthly = stage_production(args.raw_dir, args.staging_dir)
+    print(f"production/daily.parquet: {daily} rows, production/monthly.parquet: {monthly} rows")
+    for table, n in stage_field_production(args.raw_dir, args.staging_dir).items():
+        print(f"sodir/{table}.parquet: {n} rows")
     return 0
 
 

@@ -8,6 +8,9 @@ profile: well_ops
 flags:
   send_anonymous_usage_stats: false
 
+vars:
+  volve_field_name: VOLVE  # prfInformationCarrier in the Sodir field production tables
+
 model-paths: ["models"]
 seed-paths: ["seeds"]
 test-paths: ["tests"]

@@ -52,3 +52,68 @@ models:
                 values: [primary, possible, none]
       - name: hours
         data_tests: [not_null, non_negative]
+
+  - name: fct_production_monthly_reconciliation
+    description: >
+      Volve field production per month, one row per month, from three sources, each labelled
+      with its basis (ADR 0002 D9): the workbook monthly sheet summed over wellbores, Sodir gross
+      (sum wellbores) and Sodir net (saleable). Volumes in Sm3. Sodir publishes one produced-water
+      column for both tables, so water gross and net are the same figure. Ratios are set only
+      where both sides are non-zero. No source is treated as true.
+    columns:
+      - name: month_start
+        data_tests: [unique, not_null]
+      - name: oil_workbook_to_gross
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: oil_workbook_sm3
+                denominator: oil_sodir_gross_sm3
+      - name: oil_workbook_to_net
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: oil_workbook_sm3
+                denominator: oil_sodir_net_sm3
+      - name: oil_gross_to_net
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: oil_sodir_gross_sm3
+                denominator: oil_sodir_net_sm3
+      - name: gas_workbook_to_gross
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: gas_workbook_sm3
+                denominator: gas_sodir_gross_sm3
+      - name: gas_workbook_to_net
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: gas_workbook_sm3
+                denominator: gas_sodir_net_sm3
+      - name: gas_gross_to_net
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: gas_sodir_gross_sm3
+                denominator: gas_sodir_net_sm3
+      - name: water_workbook_to_gross
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: water_workbook_sm3
+                denominator: water_sodir_gross_sm3
+      - name: water_workbook_to_net
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: water_workbook_sm3
+                denominator: water_sodir_net_sm3
+      - name: water_gross_to_net
+        data_tests:
+          - ratio_requires_nonzero:
+              arguments:
+                numerator: water_sodir_gross_sm3
+                denominator: water_sodir_net_sm3

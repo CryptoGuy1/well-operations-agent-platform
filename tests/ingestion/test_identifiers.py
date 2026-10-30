@@ -1,4 +1,4 @@
-"""Key builder and D2 status rules, on 15/9-F-11 T2 and fictional wellbores only."""
+"""D2 status rules, on 15/9-F-11 T2 and fictional wellbores only."""
 
 import pytest
 
@@ -8,7 +8,6 @@ from well_ops.ingestion.identifiers import (
     build_aliases,
     sidetrack_name,
     sidetrack_suffix,
-    wellbore_key,
 )
 from well_ops.ingestion.sodir_factpages import SodirWellbore
 
@@ -17,11 +16,6 @@ SODIR = [
     SodirWellbore("15/9-X-1", "90001", "VOLVE"),
     SodirWellbore("15/9-X-2 B", "90002", "VOLVE"),
 ]
-
-
-def test_wellbore_key() -> None:
-    assert wellbore_key("7078") == "7078"
-    assert wellbore_key("7078", "T2") == "7078:T2"
 
 
 @pytest.mark.parametrize(

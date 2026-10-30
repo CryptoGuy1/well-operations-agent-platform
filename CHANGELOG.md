@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hole sections and lost time: dbt models `int_ddr__hole_section`, `int_ddr__activity_section`
   and `fct_lost_time`, and the `lost_time_codes` seed with the ADR 0002 D7 tiers. Each section
   records `hole_size_source` ('report' or 'unknown').
+- Production staging (ADR 0002 D9): the Volve workbook daily and monthly sheets to
+  `data/staging/production/`, and Sodir net and gross monthly field production (all fields) to
+  `data/staging/sodir/`. dbt models `int_production__daily_units_check` (daily volume unit
+  decision) and `fct_production_monthly_reconciliation` (workbook, Sodir gross and Sodir net per
+  month, each with its basis), and `int_production__daily_flag` (`negative_volume`).
+- `well_ops.keys`: the D1 wellbore key builder, shared by identifiers and production staging.
 
 ### Changed
 

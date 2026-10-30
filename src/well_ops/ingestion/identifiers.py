@@ -20,6 +20,7 @@ from well_ops.ingestion.sodir_factpages import SodirWellbore, load_sodir_wellbor
 from well_ops.ingestion.staging import Column, write_parquet
 from well_ops.ingestion.volve_production import PRODUCTION_XLSX, sheet_rows
 from well_ops.ingestion.volve_witsml import WITSML_ZIP, decode_witsml_name, parse_meta_file_info
+from well_ops.keys import wellbore_key
 
 PICKS_DAT = Path("volve/Geophysical_Interpretations/Wells/Well_picks_Volve_v1.dat")
 PERFORATIONS_DAT = Path("volve/Geophysical_Interpretations/Wells/Well_perforations_Volve.dat")
@@ -190,11 +191,6 @@ WELLBORE_LIKE = re.compile(
     r"(\d+/\d+-)?([A-Z]-)?\d+( ?[A-Z]{1,3}\d?)?( ?T\d+)?( pilot)?", re.IGNORECASE
 )
 SIDETRACK = re.compile(r"(?P<parent>.+?) ?(?P<suffix>T\d+)")
-
-
-def wellbore_key(npdid: str, suffix: str | None = None) -> str:
-    """D1 key: the Sodir NPDID, plus ':T2' (or ':T3', ...) for a technical sidetrack."""
-    return f"{npdid}:{suffix}" if suffix else npdid
 
 
 def sidetrack_suffix(name: str, parent: str) -> str | None:

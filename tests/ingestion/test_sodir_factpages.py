@@ -77,3 +77,39 @@ def test_stage_wellbores_parses_dates_numbers_and_blanks(tmp_path: Path) -> None
         ),
         (90009, "1/1-X", "1/1-X", None, "WILDCAT", "P&A", None, None, None, "exploration"),
     ]
+
+
+NET_CSV = (
+    "﻿prfInformationCarrier,prfYear,prfMonth,prfPrdOilNetMillSm3,prfPrdGasNetBillSm3,"
+    "prfPrdNGLNetMillSm3,prfPrdCondensateNetMillSm3,prfPrdOeNetMillSm3,"
+    "prfPrdProducedWaterInFieldMillSm3,prfNpdidInformationCarrier\n"
+    "FIELD X,2014,4,0.10301,0.01,0,0,0.11301,0.0215,90100\n"
+)
+GROSS_CSV = (
+    "﻿prfInformationCarrier,prfYear,prfMonth,prfPrdOilGrossMillSm3,prfPrdGasGrossBillSm3,"
+    "prfPrdCondensateGrossMillSm3,prfPrdOeGrossMillSm3,prfPrdProducedWaterInFieldMillSm3,"
+    "prfNpdidInformationCarrier\n"
+    "FIELD X,2014,4,0.10412,0.0151,0,0.11922,0.0215,90100\n"
+)
+
+
+def test_stage_field_production(tmp_path: Path) -> None:
+    from well_ops.ingestion.sodir_factpages import FIELD_PRODUCTION_TABLES, stage_field_production
+
+    raw = tmp_path / "raw"
+    for table, text in (
+        ("field_production_net_monthly", NET_CSV),
+        ("field_production_gross_monthly", GROSS_CSV),
+    ):
+        path = raw / FIELD_PRODUCTION_TABLES[table][0]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    counts = stage_field_production(raw, tmp_path / "staging")
+
+    assert counts == {"field_production_net_monthly": 1, "field_production_gross_monthly": 1}
+    con = duckdb.connect()
+    net = tmp_path / "staging" / "sodir" / "field_production_net_monthly.parquet"
+    assert con.execute(
+        f"select field_npdid, year, month, oil_net_mill_sm3, gas_net_bill_sm3 from '{net}'"
+    ).fetchall() == [(90100, 2014, 4, 0.10301, 0.01)]

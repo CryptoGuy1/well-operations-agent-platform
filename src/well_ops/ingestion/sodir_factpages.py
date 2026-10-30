@@ -190,3 +190,70 @@ def stage_wellbores(raw_dir: Path, staging_dir: Path) -> int:
     """Write every Sodir wellbore (all fields, not only Volve) and return the row count."""
     records = [wellbore_record(table, row) for table, row in read_wellbore_rows(raw_dir)]
     return write_parquet(staging_dir / "sodir" / "wellbore.parquet", WELLBORE_COLUMNS, records)
+
+
+# --------------------------------------------------------------------------------------------
+# Field production (ADR 0002 D9): staged to data/staging/sodir/field_production_*_monthly.parquet
+# Volumes keep Sodir's published units in their names.
+# --------------------------------------------------------------------------------------------
+
+# Staged table -> (raw export, ((staged column, Sodir column), ...))
+FIELD_PRODUCTION_TABLES: dict[str, tuple[Path, tuple[tuple[str, str], ...]]] = {
+    # Saleable (net): fuel and flare deducted.
+    "field_production_net_monthly": (
+        Path("sodir/field_production_monthly.csv"),
+        (
+            ("oil_net_mill_sm3", "prfPrdOilNetMillSm3"),
+            ("gas_net_bill_sm3", "prfPrdGasNetBillSm3"),
+            ("ngl_net_mill_sm3", "prfPrdNGLNetMillSm3"),
+            ("condensate_net_mill_sm3", "prfPrdCondensateNetMillSm3"),
+            ("oe_net_mill_sm3", "prfPrdOeNetMillSm3"),
+            ("produced_water_in_field_mill_sm3", "prfPrdProducedWaterInFieldMillSm3"),
+        ),
+    ),
+    # Sum wellbores (gross).
+    "field_production_gross_monthly": (
+        Path("sodir/field_production_gross_monthly.csv"),
+        (
+            ("oil_gross_mill_sm3", "prfPrdOilGrossMillSm3"),
+            ("gas_gross_bill_sm3", "prfPrdGasGrossBillSm3"),
+            ("condensate_gross_mill_sm3", "prfPrdCondensateGrossMillSm3"),
+            ("oe_gross_mill_sm3", "prfPrdOeGrossMillSm3"),
+            ("produced_water_in_field_mill_sm3", "prfPrdProducedWaterInFieldMillSm3"),
+        ),
+    ),
+}
+
+
+def field_production_columns(volumes: tuple[tuple[str, str], ...]) -> tuple[Column, ...]:
+    return (
+        ("field_npdid", "BIGINT"),  # prfNpdidInformationCarrier
+        ("field_name", "VARCHAR"),  # prfInformationCarrier
+        ("year", "INTEGER"),
+        ("month", "INTEGER"),
+        *((name, "DOUBLE") for name, _ in volumes),
+    )
+
+
+def field_production_record(
+    row: dict[str, str], volumes: tuple[tuple[str, str], ...]
+) -> tuple[object, ...]:
+    return (
+        int(row["prfNpdidInformationCarrier"]),
+        row["prfInformationCarrier"],
+        int(row["prfYear"]),
+        int(row["prfMonth"]),
+        *(parse_number(row[source]) for _, source in volumes),
+    )
+
+
+def stage_field_production(raw_dir: Path, staging_dir: Path) -> dict[str, int]:
+    """Write both monthly field production tables (all fields); return row counts by table."""
+    counts = {}
+    for table, (path, volumes) in FIELD_PRODUCTION_TABLES.items():
+        with (raw_dir / path).open(encoding="utf-8-sig", newline="") as fh:
+            records = [field_production_record(row, volumes) for row in csv.DictReader(fh)]
+        counts[table] = write_parquet(
+            staging_dir / "sodir" / f"{table}.parquet", field_production_columns(volumes), records
+        )
+    return counts
