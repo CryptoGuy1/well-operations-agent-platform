@@ -32,7 +32,8 @@ class Settings(BaseSettings):
 
     # Connectors.
     tool_row_cap: int = Field(default=200, ge=1)
-    redaction_denylist_path: Path | None = None  # personal names, kept outside the repository
+    # Personal names, built by `make stage`; never committed or printed.
+    redaction_denylist_path: Path = Path("data/private/redaction_denylist.txt")
 
     def require_model(self) -> str:
         """The configured model, or an error naming the variable to set."""

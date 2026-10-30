@@ -10,6 +10,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from well_ops.ingestion.denylist import write_denylist
 from well_ops.ingestion.identifiers import stage_aliases
 from well_ops.ingestion.sodir_factpages import stage_field_production, stage_wellbores
 from well_ops.ingestion.volve_ddr import load_drill_reports, stage_drill_reports
@@ -25,6 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--raw-dir", type=Path, default=Path("data/raw"))
     parser.add_argument("--staging-dir", type=Path, default=Path("data/staging"))
+    parser.add_argument("--private-dir", type=Path, default=Path("data/private"))
     args = parser.parse_args(argv)
     print(f"sodir/wellbore.parquet: {stage_wellbores(args.raw_dir, args.staging_dir)} rows")
     reports = load_drill_reports(args.raw_dir)
@@ -49,6 +51,10 @@ def main(argv: list[str] | None = None) -> int:
         args.raw_dir, args.staging_dir
     ).items():
         print(f"witsml_log_values/{key}: {files} files, {rows} rows, {nulled} values read as null")
+    # The deny-list's contents are personal data: only its size is printed.
+    print(
+        f"private/redaction_denylist.txt: {write_denylist(args.raw_dir, args.private_dir)} entries"
+    )
     return 0
 
 

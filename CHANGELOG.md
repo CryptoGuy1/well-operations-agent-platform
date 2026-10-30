@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `well_ops.settings`: runtime configuration from `WELL_OPS_*` environment variables and `.env`.
 - Empty `well_ops.connectors` and `well_ops.agents` packages; the MCP and model-provider SDKs and
   `pydantic-settings` dependencies.
+- Connector building blocks: `well_ops.connectors.redaction` (emails, phone numbers, IP addresses
+  and deny-listed names become `[redacted]`), `well_ops.connectors.evidence` (evidence id builders
+  and parsers for every table a tool can return), `well_ops.connectors.guard` (held-out guard)
+  and structured `ToolError`s.
+- `make stage` also builds the private redaction deny-list (`data/private/`, never committed)
+  from EDM user attributes, WITSML user names and the CIRA README emails; only its size is
+  printed.
+- `docs/architecture.md`: tool conventions (deterministic output, structured errors, read-only
+  annotations, date meanings).
 
 ## [0.2.0-platform] - 2026-10-30
 

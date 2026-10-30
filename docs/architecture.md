@@ -55,7 +55,9 @@ That command refuses held-out wellbores.
 **Staging (`data/staging/`).** Python parsers in `src/well_ops/ingestion/`, one module per source,
 read the raw files and write typed Parquet. They apply only rules that SQL cannot: decoding XML and
 Excel, reading the source missing-value markers as null (ADR 0002 D3), and converting timestamps
-to UTC with the original offset kept (D5). Personal fields in WITSML objects are never read.
+to UTC with the original offset kept (D5). Personal fields (EDM user attributes, WITSML
+`priv_*` elements) are never staged; their user names feed only the private redaction deny-list
+(`data/private/`, never committed).
 
 **Warehouse (`data/warehouse/well_ops.duckdb`).** A dbt project in `warehouse/` builds one DuckDB
 file in four schemas:
@@ -76,6 +78,28 @@ flag counts and test results, all as aggregates.
 
 **Tools and agents (Phase 3).** Agents will read the marts through typed, read-only tools, one
 connector per source, and never run free-form SQL.
+
+## Tool conventions
+
+Every connector tool (ADR 0004) follows these rules:
+
+- **Deterministic output.** The same arguments on the same warehouse give byte-identical
+  results. Tool output holds no random ids, timestamps or unordered sets, and every result is
+  sorted. Run ids live only in the run audit log.
+- **Structured errors.** Errors have the shape `{error, detail, hint}` and never echo the
+  caller's input back.
+- **Read-only.** Every tool is annotated read-only.
+- **Dates explained.** Tool descriptions state what dates mean where it matters. For example,
+  the Sodir completion date is the end of drilling, not production start-up, and drilling report
+  dates are local time with the original offset kept.
+- **Shared building blocks.** `well_ops.connectors.evidence` builds and parses evidence ids,
+  `well_ops.connectors.guard` refuses held-out wellbores outside evaluation mode, and
+  `well_ops.connectors.redaction` redacts every text field before it leaves a server.
+- **Redaction.** The filter replaces email addresses, phone numbers, IP addresses and names on
+  the private deny-list, which is built at staging from system user fields. No emails, phone
+  numbers, IP addresses or deny-listed names were found in development activity comments. Names
+  typed into free text but not present in system user fields cannot be detected by these
+  patterns; they are covered by a manual spot check and by the agent rule never to name people.
 
 ## Commands
 
