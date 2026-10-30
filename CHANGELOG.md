@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-platform] - 2026-10-30
+
 ### Added
 
 - ADR 0003 (warehouse and tooling) and the dbt project under `warehouse/` with the dbt-duckdb
