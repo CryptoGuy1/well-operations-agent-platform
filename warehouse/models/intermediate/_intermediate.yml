@@ -150,3 +150,25 @@ models:
           - accepted_values:
               arguments:
                 values: [negative_volume]
+
+  - name: int_witsml__log_flag
+    description: >
+      Data-quality flags on extracted WITSML logs, one row per flag per log. Logs are kept.
+      outside_report_period: a time-indexed log whose whole index range lies before the
+      wellbore's first drilling report starts or after its last report ends.
+    columns:
+      - name: log_flag_id
+        data_tests: [unique, not_null]
+      - name: log_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_witsml__log')
+                field: log_id
+      - name: flag
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [outside_report_period]

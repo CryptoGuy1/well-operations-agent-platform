@@ -1,4 +1,4 @@
-.PHONY: setup lint test download download-volve audit stage dbt-build
+.PHONY: setup lint test download download-volve audit stage extract-log dbt-build
 
 setup:
 	uv sync
@@ -22,6 +22,11 @@ audit:
 
 stage:
 	uv run python scripts/stage.py
+
+# Real-time logs for one wellbore, on demand (ADR 0002 D6): make extract-log WELLBORE=7078:T2
+extract-log:
+	@test -n "$(WELLBORE)" || { echo "usage: make extract-log WELLBORE=<key>"; exit 2; }
+	uv run python scripts/extract_log.py --wellbore "$(WELLBORE)"
 
 DBT_ARGS = --project-dir warehouse --profiles-dir warehouse
 

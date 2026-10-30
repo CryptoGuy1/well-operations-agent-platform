@@ -7,13 +7,13 @@ import duckdb
 import pytest
 
 from well_ops.ingestion.sodir_factpages import WELLBORE_TABLES
+from well_ops.ingestion.staging import to_utc
 from well_ops.ingestion.volve_ddr import (
     DDR_DIR,
     load_drill_reports,
     parse_drill_report,
     stage_drill_reports,
     status_value,
-    to_utc,
 )
 
 REPORT = """<?xml version="1.0" encoding="ISO-8859-1"?>

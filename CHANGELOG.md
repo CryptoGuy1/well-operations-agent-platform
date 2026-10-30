@@ -28,9 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decision) and `fct_production_monthly_reconciliation` (workbook, Sodir gross and Sodir net per
   month, each with its basis), and `int_production__daily_flag` (`negative_volume`).
 - `well_ops.keys`: the D1 wellbore key builder, shared by identifiers and production staging.
+- WITSML staging (ADR 0002 D6): trajectory stations, BHA runs, tubular components, wellbore
+  geometry sections, mud log intervals, rigs and messages for all wellbores to
+  `data/staging/witsml/`, keyed through the alias table; personal fields are never read. dbt
+  `stg_witsml__*` models convert angles to degrees and diameters to inches, with unit tests.
+- `make extract-log WELLBORE=<key>`: extracts one wellbore's real-time logs from the zip to
+  `data/raw/volve/witsml_logs/<key>/` and records them in the manifest; held-out wellbores are
+  refused unless explicitly allowed. Log and curve summaries are staged to
+  `data/staging/witsml_log/`, curve values to one Parquet file per log under
+  `data/staging/witsml_log_values/<key>/` (dbt view `stg_witsml__log_value`), and
+  `int_witsml__log_flag` flags logs outside the drilling-report period.
 
 ### Changed
 
+- ADR 0002 amended (2026-10-30): D3 also treats -999.25, the WITSML null value, as missing.
 - ADR 0002 amended: D4 uses two spud flags (`before_sodir_spud`, `before_report_spud`), and
   `depth_not_recorded` applies to the status `md` only.
 - Name matching moved from the audit to `well_ops.ingestion.identifiers`; drilling report,

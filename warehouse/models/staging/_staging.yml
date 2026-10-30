@@ -172,3 +172,361 @@ models:
         data_tests: [not_null]
       - name: month_start
         data_tests: [not_null]
+
+  - name: stg_witsml__trajectory_station
+    description: >
+      Trajectory stations (D6). Angles in degrees from dega or rad; dogleg severity in degrees per 30 m.
+    columns:
+      - name: station_id
+        data_tests: [unique, not_null]
+      - name: alias_status
+        description: D2 status of the WITSML wellbore name (alias table).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [wellbore, planning_object, not_a_wellbore, unresolved]
+      - name: wellbore_key
+        data_tests:
+          - not_null:
+              config:
+                where: "alias_status = 'wellbore'"
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: md_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: tvd_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: incl_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['dega', 'rad']
+      - name: azi_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['dega', 'rad']
+      - name: disp_ns_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: disp_ew_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: dls_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['dega/30m', 'dega/m', 'rad/m']
+
+  - name: stg_witsml__bha_run
+    description: >
+      One row per bhaRun object (D6). tubular_uid links to the tubular assembly.
+    columns:
+      - name: bha_run_id
+        data_tests: [unique, not_null]
+      - name: alias_status
+        description: D2 status of the WITSML wellbore name (alias table).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [wellbore, planning_object, not_a_wellbore, unresolved]
+      - name: wellbore_key
+        data_tests:
+          - not_null:
+              config:
+                where: "alias_status = 'wellbore'"
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: md_hole_start_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: md_hole_stop_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+
+  - name: stg_witsml__tubular_component
+    description: >
+      Tubular components (D6). Diameters in inches, converted from m; -999.25 is read as null. Every component may carry a bitRecord, so dia_bit_in is a bit size only where type_tubular_comp names a bit.
+    columns:
+      - name: component_id
+        data_tests: [unique, not_null]
+      - name: alias_status
+        description: D2 status of the WITSML wellbore name (alias table).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [wellbore, planning_object, not_a_wellbore, unresolved]
+      - name: wellbore_key
+        data_tests:
+          - not_null:
+              config:
+                where: "alias_status = 'wellbore'"
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: id_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: od_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: len_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: dia_bit_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: dia_bit_in
+        data_tests: [non_negative]
+      - name: id_in
+        data_tests: [non_negative]
+      - name: od_in
+        data_tests: [non_negative]
+      - name: len_m
+        data_tests: [non_negative]
+
+  - name: stg_witsml__wb_geometry_section
+    description: >
+      Wellbore geometry sections (D6): hole and casing intervals. Diameters in inches, converted from m.
+    columns:
+      - name: geometry_section_id
+        data_tests: [unique, not_null]
+      - name: alias_status
+        description: D2 status of the WITSML wellbore name (alias table).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [wellbore, planning_object, not_a_wellbore, unresolved]
+      - name: wellbore_key
+        data_tests:
+          - not_null:
+              config:
+                where: "alias_status = 'wellbore'"
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: md_top_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: md_bottom_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: tvd_top_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: tvd_bottom_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: id_section_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: od_section_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+
+  - name: stg_witsml__mud_log_interval
+    description: >
+      Mud log geology intervals (D6). Averages keep their published SI units. Lithology percentages are not staged.
+    columns:
+      - name: interval_id
+        data_tests: [unique, not_null]
+      - name: alias_status
+        description: D2 status of the WITSML wellbore name (alias table).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [wellbore, planning_object, not_a_wellbore, unresolved]
+      - name: wellbore_key
+        data_tests:
+          - not_null:
+              config:
+                where: "alias_status = 'wellbore'"
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: md_top_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: md_bottom_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+      - name: rop_av_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m/s']
+      - name: wob_av_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['N']
+      - name: tq_av_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['N.m']
+      - name: rpm_av_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['c/s']
+      - name: wt_mud_av_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['kg/m3']
+      - name: ecd_td_av_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['kg/m3']
+
+  - name: stg_witsml__rig
+    description: >
+      One row per rig object (D6).
+    columns:
+      - name: rig_id
+        data_tests: [unique, not_null]
+      - name: alias_status
+        description: D2 status of the WITSML wellbore name (alias table).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [wellbore, planning_object, not_a_wellbore, unresolved]
+      - name: wellbore_key
+        data_tests:
+          - not_null:
+              config:
+                where: "alias_status = 'wellbore'"
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+
+  - name: stg_witsml__message
+    description: >
+      WITSML messages (D6): time, depth, type, severity where present, and text.
+    columns:
+      - name: message_id
+        data_tests: [unique, not_null]
+      - name: alias_status
+        description: D2 status of the WITSML wellbore name (alias table).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [wellbore, planning_object, not_a_wellbore, unresolved]
+      - name: wellbore_key
+        data_tests:
+          - not_null:
+              config:
+                where: "alias_status = 'wellbore'"
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: md_uom
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['m']
+
+  - name: stg_witsml__log
+    description: >
+      One row per real-time log extracted on demand (D6), summarised over its chunk files:
+      index type and range, and the number of data rows. log_id is
+      <key>#<index folder>/<log folder>/<run folder>.
+    columns:
+      - name: log_id
+        data_tests: [unique, not_null]
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: index_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['measured depth', 'date time']
+      - name: rows
+        data_tests: [not_null, non_negative]
+
+  - name: stg_witsml__log_curve
+    description: One row per curve (mnemonic and unit) of each extracted log.
+    columns:
+      - name: log_curve_id
+        data_tests: [unique, not_null]
+      - name: log_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_witsml__log')
+                field: log_id
+
+  - name: stg_witsml__log_value
+    description: >
+      Curve values of extracted logs (D6), read from one Parquet file per log. Columns are the
+      index curve and every curve under its mnemonic; units are in stg_witsml__log_curve. No
+      curve mapping (ROP, WOB and so on) is applied.
+    columns:
+      - name: log_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_witsml__log')
+                field: log_id

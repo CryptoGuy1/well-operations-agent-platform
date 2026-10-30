@@ -14,6 +14,11 @@ from well_ops.ingestion.identifiers import stage_aliases
 from well_ops.ingestion.sodir_factpages import stage_field_production, stage_wellbores
 from well_ops.ingestion.volve_ddr import load_drill_reports, stage_drill_reports
 from well_ops.ingestion.volve_production import stage_production
+from well_ops.ingestion.volve_witsml import (
+    stage_witsml_log_values,
+    stage_witsml_logs,
+    stage_witsml_objects,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -36,6 +41,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"production/daily.parquet: {daily} rows, production/monthly.parquet: {monthly} rows")
     for table, n in stage_field_production(args.raw_dir, args.staging_dir).items():
         print(f"sodir/{table}.parquet: {n} rows")
+    for table, n in stage_witsml_objects(args.raw_dir, args.staging_dir).items():
+        print(f"witsml/{table}.parquet: {n} rows")
+    logs, curves = stage_witsml_logs(args.raw_dir, args.staging_dir)
+    print(f"witsml_log/log.parquet: {logs} rows, witsml_log/log_curve.parquet: {curves} rows")
+    for key, (files, rows, nulled) in stage_witsml_log_values(
+        args.raw_dir, args.staging_dir
+    ).items():
+        print(f"witsml_log_values/{key}: {files} files, {rows} rows, {nulled} values read as null")
     return 0
 
 

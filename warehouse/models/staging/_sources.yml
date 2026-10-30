@@ -44,6 +44,44 @@ sources:
       - name: monthly
         description: One row per wellbore and month. The sheet's units row states hrs and Sm3.
 
+  - name: witsml
+    description: >
+      Volve WITSML non-log objects for all wellbores, parsed by
+      src/well_ops/ingestion/volve_witsml.py (ADR 0002 D6). Values keep their published unit in
+      a <column>_uom column; times are UTC with the original offset (D5). No personal fields.
+    meta:
+      external_location: "data/staging/witsml/{name}.parquet"
+    tables:
+      - name: trajectory_station
+      - name: bha_run
+      - name: tubular_component
+      - name: wb_geometry_section
+      - name: mud_log_interval
+      - name: rig
+      - name: message
+
+  - name: witsml_log
+    description: >
+      Summaries of real-time logs extracted on demand (D6): one row per log, one per curve.
+      Curve values are not staged.
+    meta:
+      external_location: "data/staging/witsml_log/{name}.parquet"
+    tables:
+      - name: log
+      - name: log_curve
+
+  - name: witsml_log_values
+    description: >
+      Curve values of extracted logs (D6), one Parquet file per log under
+      data/staging/witsml_log_values/<wellbore_key>/; units are in witsml_log.log_curve. Declared
+      null values and -999.25 (D3, amended) are null. Array curves (axisDefinition) are lists.
+    tables:
+      - name: log_value
+        meta:
+          external_location: >-
+            read_parquet('data/staging/witsml_log_values/*/*.parquet', union_by_name = true,
+            filename = true)
+
   - name: evaluation
     description: Committed evaluation files.
     tables:

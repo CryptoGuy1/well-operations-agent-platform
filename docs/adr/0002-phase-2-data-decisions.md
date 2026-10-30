@@ -130,3 +130,8 @@ dTimSpud. Two flags are used: before_sodir_spud (Sodir entry date) and before_re
 (report dTimSpud). D4: depth_not_recorded applies to the status md only; mdPlanned is never
 recorded in this dataset and distDrill = -999.99 normally means no drilling that day.
 Made before any agent existed or any evaluation was run.
+
+### 2026-10-30
+
+D3: -999.25, the standard WITSML null value, is also treated as missing. Made before any agent
+existed or any evaluation was run.
