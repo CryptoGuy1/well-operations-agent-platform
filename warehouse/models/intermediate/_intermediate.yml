@@ -56,8 +56,9 @@ models:
       - name: hole_size_source
         description: >
           Where hole_size_in comes from: 'report' (a stated diaHole in the section) or 'unknown'.
-          Prompt 2.6 adds 'bit_size' from WITSML bhaRun and tubular objects, with precedence
-          report > bit_size > unknown. Report comment text is not parsed for hole sizes.
+          Report comment text is not parsed for hole sizes. WITSML bit size was evaluated as a
+          hole-size source and rejected (docs/data/hole-size-bit-source-experiment.md); it is
+          kept as evidence only in dim_hole_section.bit_size_evidence_in.
         data_tests:
           - not_null
           - accepted_values:

@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Hole sections and lost time: dbt models `int_ddr__hole_section`, `int_ddr__activity_section`
   and `fct_lost_time`, and the `lost_time_codes` seed with the ADR 0002 D7 tiers. Each section
   records `hole_size_source` ('report' or 'unknown').
+- `dim_hole_section`: each hole section with its `operation_phase`, activity hours,
+  `new_hole_drilled_m` and `bit_size_evidence_in` (evidence only). WITSML bit size was evaluated
+  and rejected as a hole-size source; see `docs/data/hole-size-bit-source-experiment.md`.
 - Production staging (ADR 0002 D9): the Volve workbook daily and monthly sheets to
   `data/staging/production/`, and Sodir net and gross monthly field production (all fields) to
   `data/staging/sodir/`. dbt models `int_production__daily_units_check` (daily volume unit

@@ -117,3 +117,44 @@ models:
               arguments:
                 numerator: water_sodir_gross_sm3
                 denominator: water_sodir_net_sm3
+
+  - name: dim_hole_section
+    description: >
+      One row per hole section (int_ddr__hole_section) with operation_phase, activity hours,
+      new_hole_drilled_m and bit_size_evidence_in. operation_phase is the activity category with
+      the most hours in the section, ignoring interruption; ties go to drilling > formation
+      evaluation > completion > workover > plug abandon > moving; a section with no hours outside
+      interruption has 'none'.
+    columns:
+      - name: section_id
+        data_tests: [unique, not_null]
+      - name: operation_phase
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - drilling
+                  - formation evaluation
+                  - completion
+                  - workover
+                  - plug abandon
+                  - moving
+                  - none
+      - name: activity_hours
+        data_tests: [not_null, non_negative]
+      - name: interruption_hours
+        data_tests: [not_null, non_negative]
+      - name: new_hole_drilled_m
+        description: >
+          The section's max md minus the wellbore's max md in earlier sections, floored at 0 and
+          rounded to 0.01 m. The first section, or one whose earlier sections record no md, uses
+          its stated start md instead. Null where the section records no md.
+        data_tests: [non_negative]
+      - name: bit_size_evidence_in
+        description: >
+          Evidence only, never used as hole size. The bit size (in, rounded to 1/8) of the latest
+          WITSML bit run that started at or up to 7 days before the section's stated start; null
+          where there is none or several sizes share that run start. See
+          docs/data/hole-size-bit-source-experiment.md.
+        data_tests: [non_negative]
