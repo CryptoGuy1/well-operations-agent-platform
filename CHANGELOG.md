@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   printed.
 - `docs/architecture.md`: tool conventions (deterministic output, structured errors, read-only
   annotations, date meanings).
+- Drilling-report MCP server (`well_ops.connectors.drilling_reports`, `make serve-ddr`) with
+  seven read-only tools: `list_wellbores`, `well_overview`, `hole_sections`, `lost_time`,
+  `activities`, `report` and `drilling_rate`. Every tool resolves wellbore names, applies the
+  held-out guard, caps rows, redacts text and returns evidence ids; errors never echo the input.
 
 ## [0.2.0-platform] - 2026-10-30
 

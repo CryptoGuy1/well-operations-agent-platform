@@ -92,9 +92,17 @@ Every connector tool (ADR 0004) follows these rules:
 - **Dates explained.** Tool descriptions state what dates mean where it matters. For example,
   the Sodir completion date is the end of drilling, not production start-up, and drilling report
   dates are local time with the original offset kept.
-- **Shared building blocks.** `well_ops.connectors.evidence` builds and parses evidence ids,
-  `well_ops.connectors.guard` refuses held-out wellbores outside evaluation mode, and
+- **Result envelope.** Every result lists its source relations, the resolved parameters, how
+  many rows matched and were returned, whether the row cap applied, and how many values were
+  redacted by type (never the redacted text).
+- **Shared building blocks.** `well_ops.connectors.base` holds the server class, wellbore name
+  resolution and the result envelope; `well_ops.connectors.evidence` builds and parses evidence
+  ids, `well_ops.connectors.guard` refuses held-out wellbores outside evaluation mode, and
   `well_ops.connectors.redaction` redacts every text field before it leaves a server.
+- **Held-out guard.** The guard blocks held-out keys exactly, not lettered sibling sidetracks of
+  the same well. The guard protects development from tuning on held-out data; blocking siblings
+  would remove a third of the development wellbores for negligible protection. In evaluation
+  mode all wellbores are available.
 - **Redaction.** The filter replaces email addresses, phone numbers, IP addresses and names on
   the private deny-list, which is built at staging from system user fields. No emails, phone
   numbers, IP addresses or deny-listed names were found in development activity comments. Names
@@ -111,6 +119,7 @@ Every connector tool (ADR 0004) follows these rules:
 | `make dbt-build` | Build and test the warehouse |
 | `make rebuild` | Delete staging and the warehouse, then `make stage` and `make dbt-build` |
 | `make quality` | Write the data-quality report |
+| `make serve-ddr` | Run the drilling-report MCP server on stdio |
 
 ## Held-out wellbores
 

@@ -1,5 +1,5 @@
 .PHONY: setup lint test download download-volve audit stage extract-log dbt-build \
-	dbt-compile rebuild quality
+	dbt-compile rebuild quality serve-ddr
 
 setup:
 	uv sync
@@ -50,3 +50,7 @@ rebuild:
 
 quality:
 	uv run python scripts/quality.py
+
+# Drilling-report MCP server on stdio (ADR 0004).
+serve-ddr:
+	uv run python -m well_ops.connectors.drilling_reports
