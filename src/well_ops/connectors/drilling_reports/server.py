@@ -58,8 +58,11 @@ def build_server(tools: DrillingReports) -> ConnectorServer:
         (operations days, local time), the first report date without a before-spud flag and the
         number of reports with such a flag, the deepest measured depth reported, the tvd on that
         report (null where not reported) and the report that states it, and the number of reports
-        with each data-quality flag. `duration_days` runs from the start of the first report
-        without a before-spud flag to the end of the last report (days of 24 h).
+        with each data-quality flag. `report_span_days` runs from the start of the first report
+        without a before-spud flag to the end of the last report (days of 24 h), and
+        `active_days` counts the operations days with such a report. `campaigns`: a gap of more
+        than 30 days between reports starts a new campaign; each has its local start and end
+        dates, `span_days`, `active_days` and dominant `operation_phase`.
         `total_activity_hours` sums all activities; primary and possible lost hours and their
         shares of the total activity hours (`*_lost_share_pct`, percent) are given per tier."""
         return tools.well_overview(wellbore_key)

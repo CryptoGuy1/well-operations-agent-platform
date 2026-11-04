@@ -45,6 +45,7 @@ REPORT = "staging.stg_ddr__report"
 ACTIVITY = "staging.stg_ddr__activity"
 REPORT_FLAG = "intermediate.int_ddr__report_flag"
 HOLE_SECTION = "marts.dim_hole_section"
+CAMPAIGN = "marts.dim_campaign"
 LOST_TIME = "marts.fct_lost_time"
 WELLBORE = "marts.dim_wellbore"
 CODES = "reference.lost_time_codes"
@@ -53,14 +54,16 @@ CODES = "reference.lost_time_codes"
 SPUD_FLAGS = ("before_report_spud", "before_sodir_spud")
 
 # Report counts and dates per wellbore; the published dates are kept, and the first report date
-# without a spud-date flag is given beside them. duration_days runs from the start of the first
-# report without a spud-date flag to the end of the last report, in days of 24 h.
+# without a spud-date flag is given beside them. report_span_days runs from the start of the first
+# report without a spud-date flag to the end of the last report, in days of 24 h; active_days
+# counts the operations days of reports without such a flag.
 REPORT_DATES = f"""
     select wellbore_key, count(*) as report_count, min(day) as first_day, max(day) as last_day,
            min(day) filter (where not spud_flagged) as first_unflagged_day,
            count(*) filter (where spud_flagged) as flagged_count,
            epoch(max(end_utc) - min(start_utc) filter (where not spud_flagged)) / 86400.0
-               as duration_days
+               as report_span_days,
+           count(distinct day) filter (where not spud_flagged) as active_days
     from (
         select wellbore_key, start_utc, end_utc, {REPORT_DAY} as day,
                report_file in (
@@ -165,12 +168,20 @@ class DrillingReports(ConnectorTools):
         ).fetchall()[0]
         dates = cur.execute(
             f"select report_count, first_day, last_day, first_unflagged_day, flagged_count,"
-            f" duration_days from ({REPORT_DATES}) where wellbore_key = ?",
+            f" report_span_days, active_days from ({REPORT_DATES}) where wellbore_key = ?",
             [key],
         ).fetchall()
-        count, first, last, first_unflagged, flagged, days = (
-            dates[0] if dates else (0, None, None, None, 0, None)
+        count, first, last, first_unflagged, flagged, span, active = (
+            dates[0] if dates else (0, None, None, None, 0, None, 0)
         )
+        campaigns = cur.execute(
+            f"""
+            select campaign_number, start_date_local, end_date_local, span_days, active_days,
+                   operation_phase
+            from {CAMPAIGN} where wellbore_key = ? order by campaign_number
+            """,
+            [key],
+        ).fetchall()
         total = cur.execute(
             f"select coalesce(sum(activity_hours), 0) from {HOLE_SECTION} where wellbore_key = ?",
             [key],
@@ -208,7 +219,8 @@ class DrillingReports(ConnectorTools):
             "last_report_date": iso(last),
             "first_unflagged_report_date": iso(first_unflagged),
             "flagged_report_count": flagged,
-            "duration_days": None if days is None else round(days, 2),
+            "report_span_days": None if span is None else round(span, 2),
+            "active_days": active,
             "total_activity_hours": _hours(total),
             **{f"{t}_lost_hours": _hours(lost.get(t)) for t in LOST_TIME_TIERS},
             **{f"{t}_lost_share_pct": _share(lost.get(t), total) for t in LOST_TIME_TIERS},
@@ -218,9 +230,23 @@ class DrillingReports(ConnectorTools):
                 evidence.build("ddr:report", report_file=deepest[0][0]) if deepest else None
             ),
             "flagged_reports": [{"flag": flag, "reports": n} for flag, n in flags],
+            "campaigns": [
+                {
+                    "evidence_id": evidence.build("ddr:campaign", wellbore_key=key, campaign=n),
+                    "campaign": int(n),
+                    "start_date_local": iso(start),
+                    "end_date_local": iso(end),
+                    "span_days": round(days, 2),
+                    "active_days": int(active_days),
+                    "operation_phase": phase,
+                }
+                for n, start, end, days, active_days, phase in campaigns
+            ],
         }
         return self._envelope(
-            [HOLE_SECTION, LOST_TIME, REPORT, REPORT_FLAG, WELLBORE], {"wellbore_key": key}, [row]
+            [CAMPAIGN, HOLE_SECTION, LOST_TIME, REPORT, REPORT_FLAG, WELLBORE],
+            {"wellbore_key": key},
+            [row],
         )
 
     def hole_sections(self, wellbore_key: str) -> dict[str, Any]:

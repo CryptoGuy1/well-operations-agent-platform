@@ -331,9 +331,61 @@ CASES: list[tuple[str, Claim, Verdict, str]] = [
     ),
     (
         "well duration in days, from the first unflagged report",
-        claim("days", 2.0, [f"well:wellbore:{T2}"], metric="well_duration", **WELL),
+        claim("days", 2.0, [f"well:wellbore:{T2}"], metric="report_span_days", **WELL),
         V,
         "within_tolerance",
+    ),
+    (
+        "active days: operations days with an unflagged report",
+        claim("count", 2, [f"well:wellbore:{T2}"], metric="active_days", **WELL),
+        V,
+        "exact",
+    ),
+    (
+        "campaign count",
+        claim("count", 1, [f"ddr:campaign:{T2}#1"], metric="campaign_count", **WELL),
+        V,
+        "exact",
+    ),
+    (
+        "campaign end date",
+        claim(
+            "date",
+            "2020-01-03",
+            [f"ddr:campaign:{T2}#1"],
+            metric="campaign_end_date",
+            campaign=1,
+            **WELL,
+        ),
+        V,
+        "exact",
+    ),
+    (
+        "campaign span in days, wrong",
+        claim("days", 3.0, [f"ddr:campaign:{T2}#1"], metric="campaign_days", campaign=1, **WELL),
+        C,
+        "outside_tolerance",
+    ),
+    (
+        "campaign operation phase",
+        claim(
+            "code",
+            "drilling",
+            [f"ddr:campaign:{T2}#1"],
+            metric="campaign_operation_phase",
+            campaign=1,
+            **WELL,
+        ),
+        V,
+        "exact",
+    ),
+    (
+        "a campaign that does not exist",
+        claim(
+            "count", 2, [f"ddr:campaign:{T2}#1"], metric="campaign_active_days", campaign=2, **WELL
+        ),
+        U,
+        "campaign_not_found",
     ),
     (
         "total activity hours",
@@ -648,3 +700,19 @@ def test_a_number_rounded_differently_is_unclaimed() -> None:
     rate = claim("rate_m_per_h", 14.871166, [SECTION2], metric="m")
     found = Checker.unclaimed(_document(("Drilled at 14.9 m/h, then 14.8 m/h.", [rate])))
     assert [u.text for u in found] == ["14.8"]
+
+
+def test_years_npdids_and_quoted_sizes() -> None:
+    day = claim("date", "2014-02-21", [SECTION2], metric="m")
+    size = claim("quote", '9 5/8" casing', ["ddr:activity:R1#2"], metric="quote").model_copy(
+        update={"id": "q1"}
+    )
+    depth = claim("depth_m", 2014, [SECTION2], metric="m").model_copy(update={"id": "c2"})
+    document = _document(
+        ("The 2014 campaign started on 2014-02-21; the 2016 one is later.", [day]),
+        ("Sodir wellbore 5794 (NPDID 5794) ran 9 5/8 in casing, then 20 in casing.", [size]),
+        ("The hole reached 2014 m.", [depth]),
+    )
+    found = [(u.sentence, u.text) for u in Checker.unclaimed(document)]
+    # 2014 is covered by the date claim; 9 by the quote; 2014 m by the depth claim.
+    assert found == [(0, "2016"), (1, "20")]

@@ -179,6 +179,19 @@ def test_what_remains_after_the_revision_is_reported(settings: Settings, checker
     assert outcome.results is not None and outcome.results[0].verdict is Verdict.CONTRADICTED
 
 
+def test_unclaimed_numbers_and_unsupported_claims_trigger_the_revision(
+    settings: Settings, checker: Checker
+) -> None:
+    loose = document(12.25)
+    loose["sections"][0]["sentences"].append({"text": "It took 7 days."})
+    model = ScriptedModel(message(1, use("submit_review", loose)), message(2, submit(12.25, 1)))
+    outcome = run(settings, model, checker)
+
+    assert [c["unclaimed_number"] for c in outcome.checks] == [1, 0]
+    _, findings = last_user_blocks(model.requests[1])
+    assert "unclaimed number '7' in section 1, sentence 2" in findings["text"]
+
+
 def test_an_invalid_document_goes_back_as_a_tool_error(
     settings: Settings, checker: Checker
 ) -> None:
@@ -234,7 +247,8 @@ def _prompt_metrics(version: int) -> set[str]:
 
 
 def test_the_prompts_name_only_checkable_metrics() -> None:
-    assert _prompt_metrics(1) <= set(METRICS)  # v1 is frozen; later metrics are new
+    for frozen in (1, 2):  # earlier prompts are never edited; later metrics are new
+        assert _prompt_metrics(frozen) <= set(METRICS) | {"well_duration"}
     assert _prompt_metrics(PROMPT_VERSION) == set(METRICS)
 
 

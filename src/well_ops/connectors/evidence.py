@@ -5,7 +5,7 @@ warehouse, so the claim checker can find the row again. Kinds and keys (`KINDS` 
 kind's warehouse relation):
 
 - `ddr:report:<report_file>` and `ddr:activity:<report_file>#<n>`
-- `ddr:hole-section:<wellbore_key>#<n or before_first_section>`
+- `ddr:hole-section:<wellbore_key>#<n or before_first_section>`, `ddr:campaign:<wellbore_key>#<n>`
 - `ddr:lost-time:<section_id>|<category> -- <subcategory>`
 - `prod:daily:<npdid>:<yyyy-mm-dd>`, `prod:monthly:<npdid>:<yyyy-mm>`,
   `prod:reconciliation:<yyyy-mm>`
@@ -72,6 +72,12 @@ KINDS: dict[str, Kind] = {
             "marts.dim_hole_section",
             rf"(?P<wellbore_key>{WELLBORE_KEY})#(?P<section>\d+|before_first_section)",
             "{wellbore_key}#{section}",
+        ),
+        _kind(
+            "ddr:campaign",
+            "marts.dim_campaign",
+            rf"(?P<wellbore_key>{WELLBORE_KEY})#(?P<campaign>\d+)",
+            "{wellbore_key}#{campaign}",
         ),
         _kind(
             "ddr:lost-time",

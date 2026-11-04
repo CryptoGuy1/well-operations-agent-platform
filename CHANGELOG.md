@@ -76,6 +76,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unsupported claims (`evaluation/RULES.md`).
 - `prompts/post_well_review/v2.md` (v1 unchanged): casing summary, well duration, lost-time
   share, tvd, the Sodir completion date, and the new metrics. The agent uses v2.
+- `dim_campaign`: drilling-report campaigns per wellbore (a gap of more than 30 days between
+  reports starts a new one) with dates, span, active days and dominant operation phase;
+  `ddr:campaign` evidence ids. `well_overview` returns `report_span_days` (was `duration_days`),
+  `active_days` and the campaigns.
+- Checker: metrics `report_span_days` (was `well_duration`), `active_days` and the campaign
+  metrics; bare years covered by a date claim in that year; NPDIDs masked as identifiers; numbers
+  covered by a quote claim's text, so casing sizes must be quoted from the reports.
+- The revision turn is triggered by contradicted or unsupported claims or unclaimed numbers; the
+  first draft stays the scored one.
+- `prompts/post_well_review/v3.md` (v1 and v2 unchanged): campaigns, quote-backed casing sizes
+  and exact evidence scoping. The agent uses v3.
 
 ### Removed
 

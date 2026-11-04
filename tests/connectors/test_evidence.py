@@ -8,6 +8,7 @@ EXAMPLES = {
     "ddr:report": {"report_file": "99_9_Z_1_2001_02_03.xml"},
     "ddr:activity": {"report_file": "99_9_Z_1_2001_02_03.xml", "activity_number": "7"},
     "ddr:hole-section": {"wellbore_key": "90001:T2", "section": "3"},
+    "ddr:campaign": {"wellbore_key": "90001:T2", "campaign": "2"},
     "ddr:lost-time": {
         "section_id": "90001#before_first_section",
         "category": "interruption",

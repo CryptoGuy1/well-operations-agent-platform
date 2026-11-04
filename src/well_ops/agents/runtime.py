@@ -5,9 +5,11 @@ An agent run sends its versioned prompt as the system prompt, the task as the fi
 and every connector tool plus `submit_review`, through which the agent hands in its document.
 Tool calls go to the MCP servers; a submitted document is validated against the output contract
 (validation errors go back to the model as a tool error) and then checked by the claim checker.
-If any claim is contradicted, the agent gets one revision turn with the checker's findings: claim
-ids, results and reasons, never the recomputed values, so a fix has to come from the tools. The
-last checked document is the result, with every remaining failure shown.
+If any claim is contradicted or unsupported, or any number is unclaimed, the agent gets one
+revision turn with the checker's findings: claim ids, results and reasons, never the recomputed
+values, so a fix has to come from the tools. The first draft is the scored one
+(evaluation/RULES.md); the last checked document is the final draft, with every remaining failure
+shown.
 
 The model, effort, response cap and step budget come from settings. Sampling parameters are not
 sent: the API version of the installed SDK rejects them. Every model call, tool call, draft and
@@ -45,6 +47,8 @@ SERVER_MODULES = {
 }
 
 SUBMIT = "submit_review"
+# Results that trigger the one revision turn, besides unclaimed numbers.
+REVISE = (Verdict.CONTRADICTED, Verdict.UNSUPPORTED)
 SUBMIT_TOOL: dict[str, Any] = {
     "name": SUBMIT,
     "description": (
@@ -166,7 +170,8 @@ def _findings(results: Sequence[ClaimResult], unclaimed: Sequence[UnclaimedNumbe
         "",
         "Revise the review once. For each contradicted claim, call the tools again and state "
         "the value they give, with its evidence ids, or remove the claim if the tools do not "
-        "support it. Fix unsupported claims by citing the rows the value rests on. Then call "
+        "support it. Fix unsupported claims by citing only the rows of the scope stated. State "
+        "each unclaimed number as a claim, or remove it. Then call "
         f"{SUBMIT} with the full revised document.",
     ]
     return "\n".join(lines)
@@ -286,7 +291,7 @@ async def run_agent(
                 {str(v): sum(r.verdict is v for r in check) for v in Verdict}
                 | {"unclaimed_number": len(unclaimed)}
             )
-            if not revised and any(r.verdict is Verdict.CONTRADICTED for r in check):
+            if not revised and (unclaimed or any(r.verdict in REVISE for r in check)):
                 revised = True
                 results.append({"type": "text", "text": _findings(check, unclaimed)})
                 messages.append({"role": "user", "content": results})

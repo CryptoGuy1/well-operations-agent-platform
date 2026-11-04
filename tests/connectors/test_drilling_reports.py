@@ -50,6 +50,10 @@ create table marts.dim_hole_section (
     interruption_hours double, new_hole_drilled_m double, start_date_local date,
     end_date_local date, start_casing_shoe_md_m double, casing_shoe_md_m double,
     end_tvd_m double);
+create table marts.dim_campaign (
+    campaign_id varchar, wellbore_key varchar, campaign_number bigint, start_date_local date,
+    end_date_local date, span_days double, active_days bigint, report_count bigint,
+    operation_phase varchar);
 create table marts.fct_lost_time (
     wellbore_key varchar, section_id varchar, section_label varchar, hole_size_in double,
     category varchar, subcategory varchar, tier varchar, hours double, activities bigint);
@@ -135,6 +139,10 @@ def warehouse(tmp_path: Path) -> Path:
          (T2, f"{T2}#2", "hole size unknown", None, "drilling", "drill", "none", 12.0, 1),
          (T2, f"{T2}#2", "hole size unknown", None, "drilling", "trip", "none", 6.0, 1)],
     )  # fmt: skip
+    con.execute(
+        "insert into marts.dim_campaign values"
+        f" ('{T2}#1', '{T2}', 1, '2020-01-02', '2020-01-02', 1.0, 1, 1, 'drilling')"
+    )
     con.close()
     return path
 
@@ -215,7 +223,22 @@ def test_well_overview_resolves_names(warehouse: Path) -> None:
     assert row["deepest_md_evidence_id"] == f"ddr:report:{R2}"
     assert row["deepest_tvd_m"] == 1490.0
     # R2 alone is unflagged and covers one day; 3 sections of 20 h with 4 h primary, 2 h possible.
-    assert (row["duration_days"], row["total_activity_hours"]) == (1.0, 60.0)
+    assert (row["report_span_days"], row["active_days"], row["total_activity_hours"]) == (
+        1.0,
+        1,
+        60.0,
+    )
+    assert row["campaigns"] == [
+        {
+            "evidence_id": f"ddr:campaign:{T2}#1",
+            "campaign": 1,
+            "start_date_local": "2020-01-02",
+            "end_date_local": "2020-01-02",
+            "span_days": 1.0,
+            "active_days": 1,
+            "operation_phase": "drilling",
+        }
+    ]
     assert (row["primary_lost_hours"], row["primary_lost_share_pct"]) == (4.0, 6.67)
     assert (row["possible_lost_hours"], row["possible_lost_share_pct"]) == (2.0, 3.33)
     assert row["first_report_date"] == "2020-01-01"  # published dates are kept

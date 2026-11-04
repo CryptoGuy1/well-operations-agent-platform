@@ -108,6 +108,10 @@ create table marts.dim_hole_section (
 create table marts.fct_lost_time (
     wellbore_key varchar, section_id varchar, category varchar, subcategory varchar,
     tier varchar, hours double, activities bigint);
+create table marts.dim_campaign (
+    campaign_id varchar, wellbore_key varchar, campaign_number bigint, start_date_local date,
+    end_date_local date, span_days double, active_days bigint, report_count bigint,
+    operation_phase varchar);
 create table staging.stg_sodir__wellbore (
     wellbore_key varchar, npdid bigint, entry_date date, completion_date date,
     total_depth_m double);
@@ -209,6 +213,9 @@ def warehouse(tmp_path: Path, mcp: Any) -> Path:
                 (T2, f"{T2}#2", "drilling", "ream", "possible", 2.0, 1),
                 (T2, f"{T2}#1", "drilling", "drill", "none", 62.5, 8),
                 (T2, f"{T2}#2", "drilling", "drill", "none", 50.0, 10),
+            ],
+            "marts.dim_campaign": [
+                (f"{T2}#1", T2, 1, date(2020, 1, 2), date(2020, 1, 3), 2.0, 2, 2, "drilling"),
             ],
             "staging.stg_sodir__wellbore": [
                 ("9001", 9001, date(2019, 12, 1), date(2020, 3, 1), 2500.0),

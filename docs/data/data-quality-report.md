@@ -48,6 +48,7 @@ no wellbore is named (ADR 0002 D8). The warehouse builds all wellbores, held-out
 | intermediate | `int_production__monthly_attributed` | model | 526 | 16 |
 | intermediate | `int_production__monthly_flag` | model | 39 | 6 |
 | intermediate | `int_witsml__log_flag` | model | 1 | 5 |
+| marts | `dim_campaign` | model | 69 | 9 |
 | marts | `dim_hole_section` | model | 261 | 23 |
 | marts | `dim_wellbore` | model | 8,491 | 14 |
 | marts | `fct_lost_time` | model | 1,766 | 9 |
@@ -210,6 +211,7 @@ Columns with at least one null, per model; a model without nulls is listed once.
 | `int_production__monthly_attributed` | `water_injected_sm3` | 325 | 61.8% |
 | `int_production__monthly_flag` | all 6 columns | 0 |  |
 | `int_witsml__log_flag` | all 5 columns | 0 |  |
+| `dim_campaign` | all 9 columns | 0 |  |
 | `dim_hole_section` | `hole_size_in` | 173 | 66.3% |
 | `dim_hole_section` | `stated_start_utc` | 2 | 0.8% |
 | `dim_hole_section` | `start_md_m` | 17 | 6.5% |
@@ -330,21 +332,21 @@ From the last `dbt build` (dbt 1.12.6).
 
 | Node type | Status | Count |
 |---|---|---|
-| model | success | 32 |
+| model | success | 33 |
 | seed | success | 2 |
-| test | pass | 248 |
+| test | pass | 259 |
 
 Tests by type:
 
 | Test | Status | Count |
 |---|---|---|
-| `accepted_values` | pass | 51 |
-| `non_negative` | pass | 16 |
-| `not_null` | pass | 103 |
+| `accepted_values` | pass | 52 |
+| `non_negative` | pass | 18 |
+| `not_null` | pass | 109 |
 | `ratio_requires_nonzero` | pass | 12 |
-| `relationships` | pass | 29 |
+| `relationships` | pass | 30 |
 | `singular` | pass | 3 |
-| `unique` | pass | 34 |
+| `unique` | pass | 35 |
 
 Every test passed.
 

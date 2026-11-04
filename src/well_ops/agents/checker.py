@@ -232,6 +232,7 @@ class _Context:
 REPORT = "staging.stg_ddr__report"
 ACTIVITY = "staging.stg_ddr__activity"
 HOLE_SECTION = "marts.dim_hole_section"
+CAMPAIGN = "marts.dim_campaign"
 LOST_TIME = "marts.fct_lost_time"
 SODIR_WELLBORE = "staging.stg_sodir__wellbore"
 MONTHLY = "intermediate.int_production__monthly_attributed"
@@ -408,17 +409,43 @@ def deepest_md(ctx: _Context, scope: Scope) -> Computed:
 
 def _report_dates(index: int) -> Callable[[_Context, Scope], Computed]:
     """One column of REPORT_DATES: 1 count, 2 first, 3 last, 4 first unflagged, 5 flagged,
-    6 duration in days."""
+    6 report span in days, 7 active days."""
 
     def compute(ctx: _Context, scope: Scope) -> Computed:
         key = ctx.wellbore(scope)
         rows = ctx.rows(f"select * from ({REPORT_DATES}) where wellbore_key = ?", [key])
-        value = rows[0][index] if rows else (0 if index in (1, 5) else None)
+        value = rows[0][index] if rows else (0 if index in (1, 5, 7) else None)
         if isinstance(value, dt.date):
             value = value.isoformat()
         elif isinstance(value, float):
             value = _round(value)
         return Computed(value, frozenset({_wellbore_evidence(key)}))
+
+    return compute
+
+
+def campaign_count(ctx: _Context, scope: Scope) -> Computed:
+    key = ctx.wellbore(scope)
+    rows = ctx.rows(f"select campaign_number from {CAMPAIGN} where wellbore_key = ?", [key])
+    ids = {_id("ddr:campaign", wellbore_key=key, campaign=n) for (n,) in rows}
+    return Computed(len(rows), frozenset({*ids, _wellbore_evidence(key)}))
+
+
+def _campaign_column(column: str) -> Callable[[_Context, Scope], Computed]:
+    def compute(ctx: _Context, scope: Scope) -> Computed:
+        key = ctx.wellbore(scope)
+        number = scope.integer("campaign")
+        rows = ctx.rows(
+            f"select {column} from {CAMPAIGN} where campaign_id = ?", [f"{key}#{number}"]
+        )
+        if not rows:
+            raise _Fail(Verdict.UNSUPPORTED, "campaign_not_found")
+        value = rows[0][0]
+        if isinstance(value, dt.date):
+            value = value.isoformat()
+        elif isinstance(value, float):
+            value = _round(value)
+        return Computed(value, frozenset({_id("ddr:campaign", wellbore_key=key, campaign=number)}))
 
     return compute
 
@@ -631,6 +658,7 @@ def _metric(
 H, M, D, N = ClaimType.HOURS, ClaimType.DEPTH_M, ClaimType.DATE, ClaimType.COUNT
 DAYS, PCT = ClaimType.DAYS, ClaimType.PERCENT
 WELLBORE, SECTION = ("wellbore",), ("wellbore", "section")
+CAMPAIGN_SCOPE = ("wellbore", "campaign")
 MONTHS = ("month", "start", "end")
 
 METRICS: dict[str, Metric] = {
@@ -665,7 +693,16 @@ METRICS: dict[str, Metric] = {
     "completion_date": _metric(D, WELLBORE, _sodir_column("completion_date")),
     "report_count": _metric(N, WELLBORE, _report_dates(1)),
     "flagged_report_count": _metric(N, WELLBORE, _report_dates(5)),
-    "well_duration": _metric(DAYS, WELLBORE, _report_dates(6)),
+    "report_span_days": _metric(DAYS, WELLBORE, _report_dates(6)),
+    "active_days": _metric(N, WELLBORE, _report_dates(7)),
+    "campaign_count": _metric(N, WELLBORE, campaign_count),
+    "campaign_start_date": _metric(D, CAMPAIGN_SCOPE, _campaign_column("start_date_local")),
+    "campaign_end_date": _metric(D, CAMPAIGN_SCOPE, _campaign_column("end_date_local")),
+    "campaign_days": _metric(DAYS, CAMPAIGN_SCOPE, _campaign_column("span_days")),
+    "campaign_active_days": _metric(N, CAMPAIGN_SCOPE, _campaign_column("active_days")),
+    "campaign_operation_phase": _metric(
+        ClaimType.CODE, CAMPAIGN_SCOPE, _campaign_column("operation_phase")
+    ),
     "section_report_count": _metric(N, SECTION, _section_column("report_count")),
     "section_hole_size": _metric(ClaimType.HOLE_SIZE_IN, SECTION, _section_column("hole_size_in")),
     "section_drilling_rate": _metric(ClaimType.RATE_M_PER_H, SECTION, section_drilling_rate),
@@ -701,6 +738,8 @@ def _where(eid: evidence.EvidenceId) -> tuple[str, list[Any]] | None:
             return None  # index values repeat within a log, so the id names no single row
         case "ddr:hole-section":
             return "section_id = ?", [f"{v['wellbore_key']}#{v['section']}"]
+        case "ddr:campaign":
+            return "campaign_id = ?", [f"{v['wellbore_key']}#{v['campaign']}"]
         case "ddr:activity":
             return "report_file = ? and activity_number = ?", [
                 v["report_file"],
@@ -748,7 +787,11 @@ NUMBER = re.compile(r"(?<![\w/.,-])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(
 ISO_DATE_TEXT = re.compile(r"(?<![\w-])(\d{4}-\d{2}-\d{2})(?![\w-])")
 MONTH_TEXT = re.compile(r"(?<![\w-])(\d{4}-\d{2})(?![\w-])")
 # Identifiers: section numbers ("section 2", "sections 1, 2 and 4") and evidence ids in backticks.
-IDENTIFIERS = re.compile(r"`[^`]*`|\b[Ss]ections?\s+\d+(?:\s*(?:,|and|or|to|-|\u2013)\s*\d+)*")
+IDENTIFIERS = re.compile(
+    r"`[^`]*`|\b[Ss]ections?\s+\d+(?:\s*(?:,|and|or|to|-|\u2013)\s*\d+)*"
+    r"|\b(?:[Ss]odir wellbore|NPDID)\s+\d+"
+)
+YEAR = re.compile(r"(?:19|20)\d{2}")
 
 
 @dataclass(frozen=True)
@@ -776,15 +819,24 @@ def _covers(written: str, value: object) -> bool:
     return bool(abs(number - float(value)) <= 0.5 * 10**-decimals + 1e-9)
 
 
+def _in_quote(written: str, quotes: Sequence[str]) -> bool:
+    """Whether the number appears, as a whole number, in a quote claim's text."""
+    pattern = re.compile(rf"(?<![\d.]){re.escape(written)}(?![\d]|\.\d)")
+    return any(pattern.search(q) for q in quotes)
+
+
 def unclaimed_numbers(document: Document) -> list[UnclaimedNumber]:
     """Every number and date in sentence text that is not an identifier and that no claim of
-    the same sentence states (ADR 0004: every quantity in a sentence is a claim)."""
+    the same sentence states (ADR 0004: every quantity in a sentence is a claim). A number is
+    covered by a numeric claim with its value at the precision written, or by appearing in a
+    quote claim's text (casing sizes, for example); a bare year by a date claim in that year."""
     found = []
     for i, section in enumerate(document.sections):
         for j, sentence in enumerate(section.sentences):
             text = IDENTIFIERS.sub(" ", sentence.text)
             values = [c.value for c in sentence.claims]
             dates = {str(c.value) for c in sentence.claims if c.type is ClaimType.DATE}
+            quotes = [str(c.value) for c in sentence.claims if c.type is ClaimType.QUOTE]
             months = {
                 str(v)
                 for c in sentence.claims
@@ -800,8 +852,12 @@ def unclaimed_numbers(document: Document) -> list[UnclaimedNumber]:
                     found.append(UnclaimedNumber(i, j, match.group(1)))
             text = MONTH_TEXT.sub(" ", text)
             for match in NUMBER.finditer(text):
-                if not any(_covers(match.group(1), v) for v in values):
-                    found.append(UnclaimedNumber(i, j, match.group(1)))
+                written = match.group(1)
+                if any(_covers(written, v) for v in values) or _in_quote(written, quotes):
+                    continue
+                if YEAR.fullmatch(written) and any(d.startswith(written + "-") for d in dates):
+                    continue
+                found.append(UnclaimedNumber(i, j, written))
     return found
 
 

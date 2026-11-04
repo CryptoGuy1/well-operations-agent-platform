@@ -118,6 +118,44 @@ models:
                 numerator: water_sodir_gross_sm3
                 denominator: water_sodir_net_sm3
 
+  - name: dim_campaign
+    description: >
+      Drilling-report campaigns per wellbore. Reports flagged as dated before spud are left out;
+      a gap of more than 30 days between the end of one report and the start of the next starts
+      a new campaign. span_days runs from the first report's start to the last report's end (days
+      of 24 h); active_days counts operations days with a report; operation_phase is the activity
+      category with the most hours in the campaign, ignoring interruption (tie order as in
+      dim_hole_section), or 'none'.
+    columns:
+      - name: campaign_id
+        data_tests: [unique, not_null]
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: campaign_number
+        data_tests: [not_null]
+      - name: span_days
+        data_tests: [not_null, non_negative]
+      - name: active_days
+        data_tests: [not_null, non_negative]
+      - name: operation_phase
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - drilling
+                  - formation evaluation
+                  - completion
+                  - workover
+                  - plug abandon
+                  - moving
+                  - none
+
   - name: dim_hole_section
     description: >
       One row per hole section (int_ddr__hole_section) with operation_phase, activity hours,

@@ -70,9 +70,13 @@ claim's tolerance is in percentage points.
 
 Every number and date in a sentence's text must be stated by a claim of that sentence. A number
 is covered when a claim's value, rounded to the precision written, equals it; a date when a date
-claim has the same value; a month (`yyyy-mm`) when a claim's scope names it. Identifiers are not
-numbers: digits inside wellbore names and codes (`15/9-F-11 T2`), section numbers ("section 2",
-"sections 1, 2 and 4") and evidence ids in backticks. Every other number is flagged as
+claim has the same value; a month (`yyyy-mm`) when a claim's scope names it; a bare year when a
+date claim of the sentence is in that year; and any number when it appears in the text of a
+quote claim of the sentence, which the checker verifies against the cited row. Casing sizes are
+numbers, not identifiers: a casing size must be backed by a quote claim from the report text
+that states it. Identifiers are not numbers: digits inside wellbore names and codes
+(`15/9-F-11 T2`), section numbers ("section 2", "sections 1, 2 and 4"), NPDIDs ("Sodir wellbore
+5794", "NPDID 5794") and evidence ids in backticks. Every other number is flagged as
 `unclaimed_number`. Unclaimed numbers are counted in scored results alongside unsupported claims:
 the unsupported rate is (unsupported claims + unclaimed numbers) / (claims + unclaimed numbers).
 
@@ -90,7 +94,8 @@ claim.
 
 ## Metrics
 
-Scope keys in brackets are optional. `section` is the hole-section number, `tier` is `primary`
+Scope keys in brackets are optional. `section` is the hole-section number, `campaign` the
+campaign number (a gap of more than 30 days between reports starts a new campaign), `tier` is `primary`
 or `possible`, `code` is `category -- subcategory`, months are `yyyy-mm`, and a volume metric
 takes either `month` or `start` and `end` (inclusive).
 
@@ -125,7 +130,14 @@ takes either `month` or `start` and `end` (inclusive).
 | completion_date | date | wellbore | Sodir completion date (parent's for a technical sidetrack) |
 | report_count | count | wellbore | daily drilling reports |
 | flagged_report_count | count | wellbore | reports with a before-spud flag |
-| well_duration | days | wellbore | from the start of the first report without a before-spud flag to the end of the last report, in days of 24 h |
+| report_span_days | days | wellbore | from the start of the first report without a before-spud flag to the end of the last report, in days of 24 h |
+| active_days | count | wellbore | operations days with a report without a before-spud flag |
+| campaign_count | count | wellbore | campaigns in `dim_campaign` |
+| campaign_start_date | date | wellbore, campaign | `dim_campaign.start_date_local` |
+| campaign_end_date | date | wellbore, campaign | `dim_campaign.end_date_local` |
+| campaign_days | days | wellbore, campaign | `dim_campaign.span_days` |
+| campaign_active_days | count | wellbore, campaign | `dim_campaign.active_days` |
+| campaign_operation_phase | code | wellbore, campaign | `dim_campaign.operation_phase` |
 | section_report_count | count | wellbore, section | `dim_hole_section.report_count` |
 | section_hole_size | hole_size_in | wellbore, section | `dim_hole_section.hole_size_in` |
 | section_drilling_rate | rate_m_per_h | wellbore, section | new hole over hours coded drilling -- drill |
@@ -140,7 +152,8 @@ An agent run can hold two drafts: the first one the agent submits, and a final o
 the checker's findings. The first draft is scored. The final draft is reported separately,
 labelled as the final draft after checker feedback, and never used for headline metrics,
 because the checker that drives the revision is the same checker that scores. Baselines get no
-revision turn.
+revision turn. The revision turn is given when the first draft has a contradicted or unsupported
+claim or an unclaimed number; unverifiable claims alone do not trigger it.
 
 ## Reporting results
 
