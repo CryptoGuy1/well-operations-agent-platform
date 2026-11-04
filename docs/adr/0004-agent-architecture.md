@@ -160,3 +160,15 @@ copied later, its MIT notice is added to `NOTICE`.
   are never committed.
 - Prompt versions and run logs make every report traceable to its model, prompt, configuration
   and data.
+
+## Amendments
+
+### 2026-11-04
+
+Agent runtime: the temperature setting is removed. The model provider's Python SDK used here
+(`anthropic` 2.3.0) sends API version `2026-10-21` on every request (`ANTHROPIC_API_VERSION` in
+the SDK's `_constants.py`), and its `messages.create` takes no `temperature`, `top_p` or `top_k`.
+The provider's version history for `2026-10-21` states: "The `temperature`, `top_p`, and `top_k`
+request parameters are removed. A request that sends any of them returns a 400 error on every
+model." Sampling is therefore not configurable. Reproducibility rests on a fixed model, a fixed
+prompt version and 3 runs per task. Made before any agent run.

@@ -112,6 +112,14 @@ takes either `month` or `start` and `end` (inclusive).
 | activity_code | code | [wellbore] | the cited activities' codes |
 | quote | quote | [wellbore] | exact substring of a text field of a cited row, after redaction |
 
+## Scored draft
+
+An agent run can hold two drafts: the first one the agent submits, and a final one revised after
+the checker's findings. The first draft is scored. The final draft is reported separately,
+labelled as the final draft after checker feedback, and never used for headline metrics,
+because the checker that drives the revision is the same checker that scores. Baselines get no
+revision turn.
+
 ## Reporting results
 
 Every scored result reports claim accuracy together with the unsupported rate and the

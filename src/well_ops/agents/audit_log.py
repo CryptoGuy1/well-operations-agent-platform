@@ -18,7 +18,8 @@ committed.
 remain the record.
 
 Cost is computed from the logged tokens and the configured prices (`Prices`); without prices, or
-for a call with token kinds the prices do not cover (such as cache tokens), it stays unknown.
+for a call with token kinds the prices do not cover (such as cache tokens without cache prices),
+it stays unknown.
 Tokens are always logged.
 
 `replay` renders a run from its log alone; with a checker it also re-checks the logged draft
@@ -89,7 +90,7 @@ def new_run_id(now: dt.datetime) -> str:
     return f"{now:%Y%m%dT%H%M%SZ}-{secrets.token_hex(4)}"
 
 
-def _utc_now() -> dt.datetime:
+def utc_now() -> dt.datetime:
     return dt.datetime.now(dt.UTC)
 
 
@@ -122,6 +123,8 @@ class Prices:
     input_per_mtok_usd: float
     output_per_mtok_usd: float
     checked_on: dt.date
+    cache_write_per_mtok_usd: float | None = None
+    cache_read_per_mtok_usd: float | None = None
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Prices | None:
@@ -135,6 +138,8 @@ class Prices:
             settings.price_input_per_mtok_usd,
             settings.price_output_per_mtok_usd,
             settings.price_checked_on,
+            settings.price_cache_write_per_mtok_usd,
+            settings.price_cache_read_per_mtok_usd,
         )
 
     @classmethod
@@ -145,6 +150,8 @@ class Prices:
             data["input_per_mtok_usd"],
             data["output_per_mtok_usd"],
             dt.date.fromisoformat(data["checked_on"]),
+            data.get("cache_write_per_mtok_usd"),
+            data.get("cache_read_per_mtok_usd"),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -152,18 +159,27 @@ class Prices:
             "input_per_mtok_usd": self.input_per_mtok_usd,
             "output_per_mtok_usd": self.output_per_mtok_usd,
             "checked_on": self.checked_on.isoformat(),
+            "cache_write_per_mtok_usd": self.cache_write_per_mtok_usd,
+            "cache_read_per_mtok_usd": self.cache_read_per_mtok_usd,
         }
 
     def cost(self, usage: Mapping[str, int | None]) -> float | None:
-        """USD for one call; None if the usage holds other token kinds (for example cache
-        tokens), which these prices do not cover."""
-        if any(n for kind, n in usage.items() if kind not in ("input_tokens", "output_tokens")):
-            return None
-        return round(
-            (usage["input_tokens"] or 0) * self.input_per_mtok_usd / 1e6
-            + (usage["output_tokens"] or 0) * self.output_per_mtok_usd / 1e6,
-            6,
-        )
+        """USD for one call; None if the usage holds a token kind without a price."""
+        rates = {
+            "input_tokens": self.input_per_mtok_usd,
+            "output_tokens": self.output_per_mtok_usd,
+            "cache_creation_input_tokens": self.cache_write_per_mtok_usd,
+            "cache_read_input_tokens": self.cache_read_per_mtok_usd,
+        }
+        total = 0.0
+        for kind, n in usage.items():
+            if not n:
+                continue
+            rate = rates.get(kind)
+            if rate is None:
+                return None
+            total += n * rate / 1e6
+        return round(total, 6)
 
 
 class RunLog:
@@ -200,7 +216,7 @@ class RunLog:
         code_version: str | None,
         prices: Prices | None,
         run_id: str | None = None,
-        clock: Clock = _utc_now,
+        clock: Clock = utc_now,
     ) -> Self:
         runs_dir.mkdir(parents=True, exist_ok=True)
         run_id = run_id or new_run_id(clock())
@@ -222,7 +238,7 @@ class RunLog:
         return log
 
     @classmethod
-    def open(cls, path: Path, clock: Clock = _utc_now) -> Self:
+    def open(cls, path: Path, clock: Clock = utc_now) -> Self:
         events = read_events(path)
         last = path.read_text(encoding="utf-8").splitlines()[-1]
         ended = any(e["type"] == "run_end" for e in events)

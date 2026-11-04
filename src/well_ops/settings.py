@@ -1,6 +1,8 @@
 """Runtime configuration from environment variables (prefix WELL_OPS_) and an optional .env file.
 
-Model, temperature and step limits are configuration, never constants in agent code (ADR 0004).
+Model, effort, response cap and step limits are configuration, never constants in agent code
+(ADR 0004). There is no temperature setting: the API version the SDK sends rejects sampling
+parameters (ADR 0004 amendment of 2026-11-04).
 The model has no default: it must be set before an agent runs.
 """
 
@@ -8,9 +10,9 @@ from __future__ import annotations
 
 import datetime as dt
 from pathlib import Path
-from typing import Self
+from typing import Literal, Self
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -29,8 +31,12 @@ class Settings(BaseSettings):
 
     # Agent runtime.
     model: str | None = None
-    temperature: float = Field(default=0.0, ge=0.0, le=1.0)
-    max_tokens: int = Field(default=8192, ge=1)
+    # The model provider's API key, from the environment or .env; never logged or printed.
+    provider_api_key: SecretStr | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
+    # Per model response, thinking included; responses are streamed, so a high cap is safe.
+    max_tokens: int = Field(default=64000, ge=1)
+    # Thinking depth (output_config.effort); sent only when set.
+    effort: Literal["low", "medium", "high", "xhigh", "max"] | None = None
     max_steps: int = Field(default=20, ge=1)
 
     # Model prices in USD per million tokens, from the provider's price list on price_checked_on.
@@ -38,6 +44,10 @@ class Settings(BaseSettings):
     price_input_per_mtok_usd: float | None = Field(default=None, ge=0)
     price_output_per_mtok_usd: float | None = Field(default=None, ge=0)
     price_checked_on: dt.date | None = None
+    # Prompt-cache writes and reads, if the provider lists them; a call that writes or reads the
+    # cache without its price has unknown cost.
+    price_cache_write_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_cache_read_per_mtok_usd: float | None = Field(default=None, ge=0)
 
     # Connectors.
     tool_row_cap: int = Field(default=200, ge=1)
@@ -56,6 +66,9 @@ class Settings(BaseSettings):
                 "set WELL_OPS_PRICE_INPUT_PER_MTOK_USD, WELL_OPS_PRICE_OUTPUT_PER_MTOK_USD and "
                 "WELL_OPS_PRICE_CHECKED_ON together, or none of them"
             )
+        cache = (self.price_cache_write_per_mtok_usd, self.price_cache_read_per_mtok_usd)
+        if any(p is not None for p in cache) and prices[0] is None:
+            raise ValueError("cache prices need the input and output prices")
         return self
 
     def require_model(self) -> str:

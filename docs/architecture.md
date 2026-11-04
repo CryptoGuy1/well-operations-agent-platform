@@ -124,6 +124,7 @@ Every connector tool (ADR 0004) follows these rules:
 | `make rebuild` | Delete staging and the warehouse, then `make stage` and `make dbt-build` |
 | `make quality` | Write the data-quality report |
 | `make serve-ddr`, `make serve-prod`, `make serve-sodir`, `make serve-rt` | Run the drilling-report, production, Sodir or real-time MCP server on stdio |
+| `make review WELLBORE=<key>` | Run the post-well review agent on one development wellbore; writes the run log and the checked review to `data/runs/` |
 | `make runs-db` | Build `data/runs/runs.duckdb` from the run logs |
 | `make replay RUN=<id> [RECHECK=1]` | Render one run to `data/runs/<id>.md` from its log, optionally re-checking its claims |
 

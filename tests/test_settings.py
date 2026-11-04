@@ -27,14 +27,22 @@ def test_defaults() -> None:
 
 def test_environment_overrides(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WELL_OPS_MODEL", "some-model")
-    monkeypatch.setenv("WELL_OPS_TEMPERATURE", "0.2")
+    monkeypatch.setenv("WELL_OPS_EFFORT", "high")
     monkeypatch.setenv("WELL_OPS_MAX_STEPS", "5")
     monkeypatch.setenv("WELL_OPS_EVALUATION_MODE", "true")
 
     settings = Settings()
 
     assert settings.require_model() == "some-model"
-    assert (settings.temperature, settings.max_steps, settings.evaluation_mode) == (0.2, 5, True)
+    assert (settings.effort, settings.max_steps, settings.evaluation_mode) == ("high", 5, True)
+
+
+def test_the_provider_key_is_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "not-a-real-key")
+    settings = Settings()
+    assert settings.provider_api_key is not None
+    assert "not-a-real-key" not in repr(settings) and "not-a-real-key" not in str(settings)
+    assert settings.provider_api_key.get_secret_value() == "not-a-real-key"
 
 
 def test_env_file_is_read(tmp_path: Path) -> None:

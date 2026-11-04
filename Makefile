@@ -1,6 +1,6 @@
 .PHONY: setup lint test download download-volve audit stage extract-log dbt-build \
 	dbt-compile rebuild quality serve-ddr \
-	serve-prod serve-sodir serve-rt runs-db replay
+	serve-prod serve-sodir serve-rt runs-db replay review
 
 setup:
 	uv sync
@@ -73,3 +73,8 @@ runs-db:
 replay:
 	@test -n "$(RUN)" || { echo "usage: make replay RUN=<run_id> [RECHECK=1]"; exit 2; }
 	uv run python scripts/runs.py replay "$(RUN)" $(if $(RECHECK),--recheck)
+
+# Post-well review agent on one development wellbore: make review WELLBORE="15/9-F-11 T2"
+review:
+	@test -n "$(WELLBORE)" || { echo "usage: make review WELLBORE=<key or name>"; exit 2; }
+	uv run python scripts/review.py --wellbore "$(WELLBORE)"

@@ -55,6 +55,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `dim_hole_section.start_date_local` and `end_date_local`: the operations days (local dates)
   of each section's first and last reports, also returned by the `hole_sections` tool and
   checkable as `section_start_date` and `section_end_date`.
+- Post-well review agent (`well_ops.agents.post_well_review`, prompt
+  `prompts/post_well_review/v1.md`, `make review WELLBORE=<key>`): a tool-use loop on the
+  Messages API over the four connector servers (`well_ops.agents.runtime`), with the step budget
+  from settings. The agent submits a typed document; contradicted claims get one revision turn
+  with the checker's findings (never the recomputed values), and what remains is shown in the
+  rendered review. Every run writes its audit log.
+- Settings: `effort` (sent only when set), cache-write and cache-read prices, and the provider
+  API key (read as a secret, never logged); `max_tokens` defaults to 64000 (responses are
+  streamed).
+- `evaluation/RULES.md`: the first draft is scored; the final draft after checker feedback is
+  reported separately and never used for headline metrics; baselines get no revision turn.
+
+### Removed
+
+- The `temperature` setting (ADR 0004 amendment of 2026-11-04): API version `2026-10-21`, which
+  the SDK sends, rejects `temperature`, `top_p` and `top_k`. Reproducibility rests on a fixed
+  model, a fixed prompt version and 3 runs per task.
 
 ### Changed
 

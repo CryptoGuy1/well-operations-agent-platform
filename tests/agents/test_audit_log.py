@@ -89,7 +89,7 @@ def _run(tmp_path: Path, prompt: Path, clock: Iterator[dt.datetime], checker: Ch
         agent="post_well_review",
         prompt_path=prompt,
         model="test-model",
-        settings={"temperature": 0.0, "max_steps": 5},
+        settings={"effort": None, "max_steps": 5},
         code_version="abc123",
         prices=PRICES,
         run_id="run-1",
@@ -147,6 +147,8 @@ def test_a_run_is_a_hash_chained_sequence(
         "input_per_mtok_usd": 10.0,
         "output_per_mtok_usd": 50.0,
         "checked_on": "2020-01-01",
+        "cache_write_per_mtok_usd": None,
+        "cache_read_per_mtok_usd": None,
     }
     assert end["elapsed_ms"] == 6000 and events[-1]["at"] == "2020-01-01T00:00:06+00:00"
 
@@ -241,6 +243,13 @@ def test_token_kinds_without_a_price_make_cost_unknown(
     events = read_events(log.path)
     assert [e["data"]["cost_usd"] for e in events if e["type"] == "model_call"] == [0.0001, None]
     assert events[-1]["data"]["cost_usd"] is None
+
+
+def test_cache_tokens_are_priced_when_cache_prices_are_set() -> None:
+    prices = Prices(10.0, 50.0, dt.date(2020, 1, 1), 12.5, 1.0)
+    usage = {"input_tokens": 100, "output_tokens": 10, "cache_creation_input_tokens": 1000}
+    # 100 * 10 + 10 * 50 + 1000 * 12.5, per million tokens.
+    assert prices.cost({**usage, "cache_read_input_tokens": 2000}) == 0.016
 
 
 def test_tokens_are_always_logged(tmp_path: Path, prompt: Path) -> None:
