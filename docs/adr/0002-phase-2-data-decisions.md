@@ -141,3 +141,31 @@ existed or any evaluation was run.
 D1: production rows keep the published NPDID; an attributed wellbore key may differ only through a
 documented override (seed with reason). One override: 7078 to 7080 (15/9-F-11 to 15/9-F-11 B).
 Made before any agent was scored.
+
+### 2026-11-04
+
+D7: after the lost-time review the tiers are:
+
+- **Primary:** `interruption -- repair`, `interruption -- waiting on weather`,
+  `interruption -- fish`, `interruption -- lost circulation`, `interruption -- well control`,
+  `interruption -- rig up/down` and `drilling -- wait`.
+- **Possible:** `interruption -- wait`, `interruption -- other`, `interruption -- maintain`,
+  `interruption -- sidetrack`, `formation evaluation -- wait`, `plug abandon -- wait` and
+  `workover -- wait`.
+
+Moves, with the reviewer's judgements (lost, not lost, unclear): `interruption -- wait` from
+primary to possible (4, 14, 2 of 20); `interruption -- rig up/down` from possible to primary
+(6, 0, 1 of 7); `drilling -- wait` from possible to primary (5, 0, 1 of 6). No other code moved:
+`formation evaluation -- wait` (4, 1, 0 of 5), `interruption -- maintain` (13, 4, 3 of 20),
+`interruption -- other` (10, 10, 0 of 20), `interruption -- sidetrack` (10, 1, 9 of 20) and
+`plug abandon -- wait` (1, 8, 0 of 9).
+
+Sample: one `random.Random(20261030)` drew, for each possible-tier code in seed order and then
+for `interruption -- wait`, up to 20 activities (all of them where a code has fewer) from every
+wellbore with drilling reports except the held-out wellbores: 107 activities from 20 wellbores,
+63 from development and 44 from outside-population wellbores. This departs from D7 in two ways:
+D7 planned a sample from development wellbores only, and it foresaw moves into the primary tier
+only, while the review also tested a primary code (`interruption -- wait`). `workover -- wait`
+has no activity outside the held-out wellbores, so it was not sampled and stays possible. No
+personal names were seen in the 107 comments, by the reviewer or by the redaction filter (which
+also found no email addresses, phone numbers or IP addresses). Made before any scored run.

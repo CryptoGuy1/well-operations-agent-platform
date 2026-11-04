@@ -4,7 +4,8 @@ version: 2
 seeds:
   - name: lost_time_codes
     description: >
-      Lost-time tiers exactly as in docs/adr/0002-phase-2-data-decisions.md, D7. 'primary' is
+      Lost-time tiers exactly as in docs/adr/0002-phase-2-data-decisions.md, D7 as amended on
+      2026-11-04 after the lost-time review. 'primary' is
       used in scored evaluation; 'possible' is reported separately and never added to it.
       Changing a row needs an amendment to ADR 0002 before any scored run.
     config:

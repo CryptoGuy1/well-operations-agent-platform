@@ -4,12 +4,12 @@ interruption,waiting on weather,primary
 interruption,fish,primary
 interruption,lost circulation,primary
 interruption,well control,primary
-interruption,wait,primary
+interruption,wait,possible
 interruption,other,possible
 interruption,maintain,possible
 interruption,sidetrack,possible
-interruption,rig up/down,possible
-drilling,wait,possible
+interruption,rig up/down,primary
+drilling,wait,primary
 formation evaluation,wait,possible
 plug abandon,wait,possible
 workover,wait,possible

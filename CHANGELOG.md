@@ -99,6 +99,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Lost-time tiers (ADR 0002 D7 amendment of 2026-11-04, after the lost-time review):
+  `interruption -- wait` moves from primary to possible; `interruption -- rig up/down` and
+  `drilling -- wait` move from possible to primary. The `lost_time_codes` seed matches.
+
 - Production for workbook NPDID 7078 ("NO 15/9-F-11 H") is attributed to 15/9-F-11 B (7080):
   15/9-F-11 is an observation well, plugged and abandoned in May 2013. Field totals are
   unchanged.
