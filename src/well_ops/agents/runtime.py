@@ -32,7 +32,7 @@ from mcp.client.stdio import StdioServerParameters
 from pydantic import ValidationError
 
 from well_ops.agents.audit_log import RunLog, Status, canonical_json, sha256_json, sha256_text
-from well_ops.agents.checker import Checker, ClaimResult, Verdict
+from well_ops.agents.checker import Checker, ClaimResult, UnclaimedNumber, Verdict
 from well_ops.agents.schema import Document
 from well_ops.settings import Settings
 
@@ -137,6 +137,7 @@ class Outcome:
     document: Document | None
     results: list[ClaimResult] | None
     checks: list[dict[str, int]] = field(default_factory=list)  # verdict counts per check
+    unclaimed: list[UnclaimedNumber] = field(default_factory=list)  # of the last check
 
 
 def _usage(message: Message) -> dict[str, int]:
@@ -149,13 +150,18 @@ def _usage(message: Message) -> dict[str, int]:
     }
 
 
-def _findings(results: Sequence[ClaimResult]) -> str:
+def _findings(results: Sequence[ClaimResult], unclaimed: Sequence[UnclaimedNumber]) -> str:
     failed = [r for r in results if r.verdict is not Verdict.VERIFIED]
     lines = [
         "The claim checker found these problems in your review (claim id: result, reason):",
         *(
             f"- {r.claim_id}: {r.verdict}, {r.reason}" + (f" ({r.detail})" if r.detail else "")
             for r in failed
+        ),
+        *(
+            f"- unclaimed number {u.text!r} in section {u.section + 1}, sentence "
+            f"{u.sentence + 1}: state it as a claim with evidence, or remove it"
+            for u in unclaimed
         ),
         "",
         "Revise the review once. For each contradicted claim, call the tools again and state "
@@ -205,7 +211,7 @@ async def run_agent(
 
     messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
     logged = 0  # messages already written to the log
-    checked: tuple[Document, list[ClaimResult]] | None = None
+    checked: tuple[Document, list[ClaimResult], list[UnclaimedNumber]] | None = None
     checks: list[dict[str, int]] = []
     revised = False
     status: Status = "stopped"
@@ -273,12 +279,16 @@ async def run_agent(
         if submitted is not None:
             log.draft(submitted)
             check = checker.check(submitted)
-            log.check(check)
-            checked = (submitted, check)
-            checks.append({str(v): sum(r.verdict is v for r in check) for v in Verdict})
+            unclaimed = checker.unclaimed(submitted)
+            log.check(check, unclaimed)
+            checked = (submitted, check, unclaimed)
+            checks.append(
+                {str(v): sum(r.verdict is v for r in check) for v in Verdict}
+                | {"unclaimed_number": len(unclaimed)}
+            )
             if not revised and any(r.verdict is Verdict.CONTRADICTED for r in check):
                 revised = True
-                results.append({"type": "text", "text": _findings(check)})
+                results.append({"type": "text", "text": _findings(check, unclaimed)})
                 messages.append({"role": "user", "content": results})
                 continue
             status, error = "completed", None
@@ -288,5 +298,7 @@ async def run_agent(
     if checked is not None and status == "stopped":
         status, error = "completed", "revision not submitted within the step budget"
     log.end(status, error)
-    document, final = checked if checked is not None else (None, None)
-    return Outcome(log.run_id, log.path, status, error, document, final, checks)
+    if checked is None:
+        return Outcome(log.run_id, log.path, status, error, None, None, checks)
+    document, final, unclaimed = checked
+    return Outcome(log.run_id, log.path, status, error, document, final, checks, unclaimed)

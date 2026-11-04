@@ -15,7 +15,7 @@ from anthropic.types import Message
 
 from well_ops.agents.audit_log import read_events
 from well_ops.agents.checker import METRICS, Checker, Verdict
-from well_ops.agents.post_well_review.agent import AGENT, prompt_path, review
+from well_ops.agents.post_well_review.agent import AGENT, PROMPT_VERSION, prompt_path, review
 from well_ops.agents.runtime import Outcome, Toolbox, stdio_servers
 from well_ops.connectors.base import READ_ONLY, ConnectorServer
 from well_ops.settings import Settings
@@ -191,7 +191,13 @@ def test_an_invalid_document_goes_back_as_a_tool_error(
     (error,) = last_user_blocks(model.requests[1])
     assert error["is_error"] and "sections" in error["content"]
     assert outcome.status == "completed" and outcome.checks == [
-        {"verified": 1, "contradicted": 0, "unsupported": 0, "unverifiable": 0}
+        {
+            "verified": 1,
+            "contradicted": 0,
+            "unsupported": 0,
+            "unverifiable": 0,
+            "unclaimed_number": 0,
+        }
     ]
 
 
@@ -222,10 +228,14 @@ def test_refusal_and_truncation_fail_the_run(
     assert (outcome.status, outcome.error, outcome.document) == ("failed", stop, None)
 
 
-def test_the_prompt_names_only_checkable_metrics() -> None:
-    text = (REPO / "prompts" / AGENT / "v1.md").read_text(encoding="utf-8")
-    named = set(re.findall(r"^\| ([a-z_]+) \| [a-z0-9_]+ \|", text, re.M))
-    assert named == set(METRICS)
+def _prompt_metrics(version: int) -> set[str]:
+    text = (REPO / "prompts" / AGENT / f"v{version}.md").read_text(encoding="utf-8")
+    return set(re.findall(r"^\| ([a-z_]+) \| [a-z0-9_]+ \|", text, re.M))
+
+
+def test_the_prompts_name_only_checkable_metrics() -> None:
+    assert _prompt_metrics(1) <= set(METRICS)  # v1 is frozen; later metrics are new
+    assert _prompt_metrics(PROMPT_VERSION) == set(METRICS)
 
 
 def test_tool_names_must_be_unique() -> None:

@@ -53,13 +53,16 @@ CODES = "reference.lost_time_codes"
 SPUD_FLAGS = ("before_report_spud", "before_sodir_spud")
 
 # Report counts and dates per wellbore; the published dates are kept, and the first report date
-# without a spud-date flag is given beside them.
+# without a spud-date flag is given beside them. duration_days runs from the start of the first
+# report without a spud-date flag to the end of the last report, in days of 24 h.
 REPORT_DATES = f"""
     select wellbore_key, count(*) as report_count, min(day) as first_day, max(day) as last_day,
            min(day) filter (where not spud_flagged) as first_unflagged_day,
-           count(*) filter (where spud_flagged) as flagged_count
+           count(*) filter (where spud_flagged) as flagged_count,
+           epoch(max(end_utc) - min(start_utc) filter (where not spud_flagged)) / 86400.0
+               as duration_days
     from (
-        select wellbore_key, {REPORT_DAY} as day,
+        select wellbore_key, start_utc, end_utc, {REPORT_DAY} as day,
                report_file in (
                    select report_file from {REPORT_FLAG} where flag in {SPUD_FLAGS}
                ) as spud_flagged
@@ -85,6 +88,11 @@ def report_not_found() -> ToolError:
 
 def _hours(value: float | None) -> float:
     return round(value or 0.0, 2)
+
+
+def _share(part: float | None, total: float | None) -> float | None:
+    """`part` as a percentage of `total`, to 0.01; None without a total."""
+    return round(100 * (part or 0.0) / total, 2) if total else None
 
 
 def _activity(r: Sequence[Any]) -> dict[str, Any]:
@@ -156,16 +164,27 @@ class DrillingReports(ConnectorTools):
             f"select wellbore_name, field_name from {WELLBORE} where wellbore_key = ?", [key]
         ).fetchall()[0]
         dates = cur.execute(
-            f"select report_count, first_day, last_day, first_unflagged_day, flagged_count"
-            f" from ({REPORT_DATES}) where wellbore_key = ?",
+            f"select report_count, first_day, last_day, first_unflagged_day, flagged_count,"
+            f" duration_days from ({REPORT_DATES}) where wellbore_key = ?",
             [key],
         ).fetchall()
-        count, first, last, first_unflagged, flagged = (
-            dates[0] if dates else (0, None, None, None, 0)
+        count, first, last, first_unflagged, flagged, days = (
+            dates[0] if dates else (0, None, None, None, 0, None)
+        )
+        total = cur.execute(
+            f"select coalesce(sum(activity_hours), 0) from {HOLE_SECTION} where wellbore_key = ?",
+            [key],
+        ).fetchall()[0][0]
+        lost = dict(
+            cur.execute(
+                f"select tier, sum(hours) from {LOST_TIME}"
+                " where wellbore_key = ? and tier in ('primary', 'possible') group by tier",
+                [key],
+            ).fetchall()
         )
         deepest = cur.execute(
             f"""
-            select report_file, md_m from {REPORT}
+            select report_file, md_m, tvd_m from {REPORT}
             where wellbore_key = ? and md_m is not null
             order by md_m desc, start_utc, report_file
             limit 1
@@ -189,13 +208,20 @@ class DrillingReports(ConnectorTools):
             "last_report_date": iso(last),
             "first_unflagged_report_date": iso(first_unflagged),
             "flagged_report_count": flagged,
+            "duration_days": None if days is None else round(days, 2),
+            "total_activity_hours": _hours(total),
+            **{f"{t}_lost_hours": _hours(lost.get(t)) for t in LOST_TIME_TIERS},
+            **{f"{t}_lost_share_pct": _share(lost.get(t), total) for t in LOST_TIME_TIERS},
             "deepest_md_m": deepest[0][1] if deepest else None,
+            "deepest_tvd_m": deepest[0][2] if deepest else None,
             "deepest_md_evidence_id": (
                 evidence.build("ddr:report", report_file=deepest[0][0]) if deepest else None
             ),
             "flagged_reports": [{"flag": flag, "reports": n} for flag, n in flags],
         }
-        return self._envelope([REPORT, REPORT_FLAG, WELLBORE], {"wellbore_key": key}, [row])
+        return self._envelope(
+            [HOLE_SECTION, LOST_TIME, REPORT, REPORT_FLAG, WELLBORE], {"wellbore_key": key}, [row]
+        )
 
     def hole_sections(self, wellbore_key: str) -> dict[str, Any]:
         cur = self._cursor()
@@ -205,7 +231,8 @@ class DrillingReports(ConnectorTools):
             select section_id, section_number, section_label, hole_size_in, hole_size_source,
                    operation_phase, start_utc, end_utc, stated_start_utc, start_md_m, end_md_m,
                    new_hole_drilled_m, report_count, inferred_share, activity_hours,
-                   interruption_hours, bit_size_evidence_in, start_date_local, end_date_local
+                   interruption_hours, start_date_local, end_date_local, start_casing_shoe_md_m,
+                   casing_shoe_md_m, end_tvd_m
             from {HOLE_SECTION} where wellbore_key = ? order by section_number
             """,
             [key],
@@ -223,17 +250,19 @@ class DrillingReports(ConnectorTools):
                     "operation_phase": r[5],
                     "start_utc": utc_iso(r[6]),
                     "end_utc": utc_iso(r[7]),
-                    "start_date_local": iso(r[17]),
-                    "end_date_local": iso(r[18]),
+                    "start_date_local": iso(r[16]),
+                    "end_date_local": iso(r[17]),
                     "stated_start_utc": utc_iso(r[8]),
                     "start_md_m": r[9],
                     "end_md_m": r[10],
+                    "end_tvd_m": r[20],
+                    "start_casing_shoe_md_m": r[18],
+                    "casing_shoe_md_m": r[19],
                     "new_hole_drilled_m": r[11],
                     "report_count": r[12],
                     "inferred_share": r[13],
                     "activity_hours": r[14],
                     "interruption_hours": r[15],
-                    "bit_size_evidence_in": r[16],
                 }
                 for r in rows
             ],
@@ -245,7 +274,7 @@ class DrillingReports(ConnectorTools):
         base = cur.execute(
             f"""
             select s.section_number, l.section_id, l.section_label, l.hole_size_in,
-                   l.category, l.subcategory, l.tier, l.hours, l.activities
+                   l.category, l.subcategory, l.tier, l.hours, l.activities, s.activity_hours
             from {LOST_TIME} l left join {HOLE_SECTION} s using (section_id)
             where l.wellbore_key = ? and l.tier in ('primary', 'possible')
             order by s.section_number, l.category, l.subcategory
@@ -275,6 +304,9 @@ class DrillingReports(ConnectorTools):
                     "hole_size_in": group[2],
                     "primary_hours": _hours(hours["primary"]),
                     "possible_hours": _hours(hours["possible"]),
+                    # Shares of the section's activity hours.
+                    "primary_share_pct": _share(hours["primary"], members[0][9]),
+                    "possible_share_pct": _share(hours["possible"], members[0][9]),
                 }
             elif group_by == "code":
                 row = {"code": group[0], "tier": group[1]}

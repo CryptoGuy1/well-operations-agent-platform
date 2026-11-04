@@ -17,7 +17,7 @@ from well_ops.agents.runtime import ModelClient, Outcome, Toolbox, run_agent
 from well_ops.settings import Settings
 
 AGENT = "post_well_review"
-PROMPT_VERSION = 1
+PROMPT_VERSION = 2
 
 
 def prompt_path(settings: Settings) -> Path:

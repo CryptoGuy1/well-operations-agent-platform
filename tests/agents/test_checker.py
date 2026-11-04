@@ -12,7 +12,7 @@ from well_ops.agents.schema import Claim, Document
 T2 = "9001:T2"
 V, C, U, X = Verdict.VERIFIED, Verdict.CONTRADICTED, Verdict.UNSUPPORTED, Verdict.UNVERIFIABLE
 UNITS = {"hours": "h", "depth_m": "m", "rate_m_per_h": "m/h", "hole_size_in": "in"}
-UNITS |= {"volume_sm3": "Sm3"}
+UNITS |= {"volume_sm3": "Sm3", "days": "d", "percent": "%"}
 
 
 def lost(section: int, code: str) -> str:
@@ -285,6 +285,107 @@ CASES: list[tuple[str, Claim, Verdict, str]] = [
         C,
         "not_in_evidence",
     ),
+    # Casing, tvd, duration and lost-time share.
+    (
+        "casing set during a section",
+        claim("depth_m", 1990, [SECTION2], metric="section_casing_shoe_md", section=2, **WELL),
+        V,
+        "within_tolerance",
+    ),
+    (
+        "no casing set in a section",
+        claim(
+            "depth_m",
+            1990,
+            [f"ddr:hole-section:{T2}#3"],
+            metric="section_casing_shoe_md",
+            section=3,
+            **WELL,
+        ),
+        C,
+        "no_value",
+    ),
+    (
+        "casing shoe at the start of a section",
+        claim("depth_m", 990, [SECTION2], metric="section_start_casing_shoe_md", section=2, **WELL),
+        V,
+        "within_tolerance",
+    ),
+    (
+        "tvd at the end of a section",
+        claim("depth_m", 1900, [SECTION2], metric="section_end_tvd", section=2, **WELL),
+        V,
+        "within_tolerance",
+    ),
+    (
+        "tvd on the deepest report",
+        claim("depth_m", 1400, ["ddr:report:R2"], metric="deepest_tvd", **WELL),
+        V,
+        "within_tolerance",
+    ),
+    (
+        "tvd on an operations day",
+        claim("depth_m", 450, ["ddr:report:R1"], metric="report_tvd", date="2020-01-02", **WELL),
+        C,
+        "outside_tolerance",  # 400 m
+    ),
+    (
+        "well duration in days, from the first unflagged report",
+        claim("days", 2.0, [f"well:wellbore:{T2}"], metric="well_duration", **WELL),
+        V,
+        "within_tolerance",
+    ),
+    (
+        "total activity hours",
+        claim("hours", 216, [f"well:wellbore:{T2}"], metric="total_activity_hours", **WELL),
+        V,
+        "within_tolerance",
+    ),
+    (
+        "primary lost-time share of the wellbore",
+        claim(
+            "percent",
+            3.94,
+            [lost(1, "interruption -- wait"), lost(2, "interruption -- repair")],
+            metric="lost_time_share",
+            tier="primary",
+            **WELL,
+        ),
+        V,
+        "within_tolerance",
+    ),
+    (
+        "primary lost-time share of a section, outside 0.1 percentage points",
+        claim(
+            "percent",
+            5.0,
+            [lost(2, "interruption -- repair")],
+            metric="lost_time_share",
+            tier="primary",
+            section=2,
+            **WELL,
+        ),
+        C,
+        "outside_tolerance",  # 4.86 %
+    ),
+    (
+        "activity date, a local date",
+        claim(
+            "date",
+            "2020-01-02",
+            ["ddr:activity:R1#1", "ddr:activity:R1#2"],
+            metric="activity_date",
+            **WELL,
+        ),
+        V,
+        "exact",
+    ),
+    (
+        "activity date stated as the UTC date",
+        claim("date", "2020-01-01", ["ddr:activity:R1#1"], metric="activity_date"),
+        C,
+        "different",
+    ),
     # Production, by attributed wellbore.
     (
         "attributed wellbore cites the published NPDID",
@@ -509,3 +610,41 @@ def test_document_results_in_claim_order(checker: Checker) -> None:
     )
     results = checker.check(document)
     assert [(r.claim_id, r.verdict) for r in results] == [("rate", V), ("lost", V)]
+
+
+def _document(*sentences: tuple[str, list[Claim]]) -> Document:
+    return Document.model_validate(
+        {
+            "agent": "test",
+            "title": "t",
+            "sections": [
+                {
+                    "heading": "h",
+                    "sentences": [
+                        {"text": text, "claims": [c.model_dump(mode="json") for c in claims]}
+                        for text, claims in sentences
+                    ],
+                }
+            ],
+        }
+    )
+
+
+def test_unclaimed_numbers_are_flagged() -> None:
+    rate = claim("rate_m_per_h", 14.871166, [SECTION2], metric="m")
+    day = claim("date", "2013-03-24", [SECTION2], metric="m").model_copy(update={"id": "d1"})
+    document = _document(
+        # Identifiers, a rounded claim value and a claimed date: nothing to flag.
+        ("15/9-F-11 T2 sections 1, 2 and 4 drilled at 14.87 m/h on 2013-03-24.", [rate, day]),
+        # Unclaimed: a number, a date and a month.
+        ("The bit evidence points to 8.5 in, from 2013-05-09 and in 2014-01.", []),
+        ("Activity `ddr:activity:R1#2` in section 3.", []),
+    )
+    found = [(u.sentence, u.text) for u in Checker.unclaimed(document)]
+    assert found == [(1, "2013-05-09"), (1, "2014-01"), (1, "8.5")]
+
+
+def test_a_number_rounded_differently_is_unclaimed() -> None:
+    rate = claim("rate_m_per_h", 14.871166, [SECTION2], metric="m")
+    found = Checker.unclaimed(_document(("Drilled at 14.9 m/h, then 14.8 m/h.", [rate])))
+    assert [u.text for u in found] == ["14.8"]

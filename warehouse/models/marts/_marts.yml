@@ -149,6 +149,21 @@ models:
       - name: end_date_local
         description: Operations day of the section's last report, as start_date_local.
         data_tests: [not_null]
+      - name: start_casing_shoe_md_m
+        description: >
+          Deepest casing shoe (report mdCsgLast) on the section's first report that states one:
+          the shoe the section is drilled below.
+        data_tests: [non_negative]
+      - name: casing_shoe_md_m
+        description: >
+          Casing set during the section: the section's deepest mdCsgLast where it is deeper than
+          start_casing_shoe_md_m; null where no new casing is reported.
+        data_tests: [non_negative]
+      - name: end_tvd_m
+        description: >
+          tvd on the report with the section's deepest md (the earliest such report); null where
+          that report records no tvd.
+        data_tests: [non_negative]
       - name: activity_hours
         data_tests: [not_null, non_negative]
       - name: interruption_hours

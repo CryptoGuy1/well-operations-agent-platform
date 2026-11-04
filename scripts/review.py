@@ -95,7 +95,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"run log: {outcome.log_path}")
     if outcome.document is not None and outcome.results is not None:
         out = outcome.log_path.with_suffix(".review.md")
-        text = render_document(outcome.document, outcome.results) + run_section(outcome, end)
+        text = render_document(outcome.document, outcome.results, outcome.unclaimed)
+        text += run_section(outcome, end)
         out.write_text(text, encoding="utf-8")
         print(f"review: {out}")
         print("final check: " + ", ".join(f"{n} {v}" for v, n in summary(outcome.results).items()))

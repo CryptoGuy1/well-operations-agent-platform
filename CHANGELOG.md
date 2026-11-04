@@ -66,8 +66,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   streamed).
 - `evaluation/RULES.md`: the first draft is scored; the final draft after checker feedback is
   reported separately and never used for headline metrics; baselines get no revision turn.
+- `dim_hole_section.start_casing_shoe_md_m`, `casing_shoe_md_m` (casing set during the section,
+  from report mdCsgLast) and `end_tvd_m`; `hole_sections` returns them. `well_overview` returns
+  `duration_days`, `total_activity_hours`, lost hours and shares per tier and `deepest_tvd_m`;
+  `lost_time` by section returns lost-time shares of the section's activity hours.
+- Checker: claim types `days` and `percent`; metrics `activity_date`, casing shoe, tvd,
+  `well_duration`, `total_activity_hours` and `lost_time_share`; the unclaimed-number check
+  (numbers and dates in sentence text that no claim states), logged, rendered and counted with
+  unsupported claims (`evaluation/RULES.md`).
+- `prompts/post_well_review/v2.md` (v1 unchanged): casing summary, well duration, lost-time
+  share, tvd, the Sodir completion date, and the new metrics. The agent uses v2.
 
 ### Removed
+
+- `bit_size_evidence_in` from the `hole_sections` tool output (kept in the warehouse as
+  evidence only).
 
 - The `temperature` setting (ADR 0004 amendment of 2026-11-04): API version `2026-10-21`, which
   the SDK sends, rejects `temperature`, `top_p` and `top_k`. Reproducibility rests on a fixed

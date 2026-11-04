@@ -50,9 +50,12 @@ the operations days of its first and last reports.
 | rate_m_per_h | m/h | 0 | 0.02 |
 | hole_size_in | in | 0.01 | 0 |
 | volume_sm3 | Sm3 | 0 | 0.005 |
+| days | d | 0.05 | 0 |
+| percent | % | 0.1 | 0 |
 | count | | 0 | 0 |
 
-The volume tolerance of 0.5 % admits a volume stated to three significant figures.
+The volume tolerance of 0.5 % admits a volume stated to three significant figures. A percent
+claim's tolerance is in percentage points.
 
 ## Evidence
 
@@ -62,6 +65,16 @@ The volume tolerance of 0.5 % admits a volume stated to three significant figure
   scoped to a wellbore accepts `well:wellbore` where the matching tool returns it.
 - `rt:log-value` ids cannot be cited: index values repeat within a log, so the id names no single
   row.
+
+## Unclaimed numbers
+
+Every number and date in a sentence's text must be stated by a claim of that sentence. A number
+is covered when a claim's value, rounded to the precision written, equals it; a date when a date
+claim has the same value; a month (`yyyy-mm`) when a claim's scope names it. Identifiers are not
+numbers: digits inside wellbore names and codes (`15/9-F-11 T2`), section numbers ("section 2",
+"sections 1, 2 and 4") and evidence ids in backticks. Every other number is flagged as
+`unclaimed_number`. Unclaimed numbers are counted in scored results alongside unsupported claims:
+the unsupported rate is (unsupported claims + unclaimed numbers) / (claims + unclaimed numbers).
 
 ## Real-time curve statistics
 
@@ -88,12 +101,20 @@ takes either `month` or `start` and `end` (inclusive).
 | code_hours | hours | wellbore, code, [section] | `fct_lost_time` hours, any tier |
 | section_activity_hours | hours | wellbore, section | `dim_hole_section.activity_hours` |
 | section_interruption_hours | hours | wellbore, section | `dim_hole_section.interruption_hours` |
+| total_activity_hours | hours | wellbore | all activity hours (sum over hole sections) |
+| lost_time_share | percent | wellbore, tier, [section] | lost hours of the tier over the activity hours of the wellbore or section, × 100 |
 | activity_duration | hours | [wellbore] | the cited activities' durations, summed |
+| activity_date | date | [wellbore] | local start date of the cited activities |
 | section_start_md | depth_m | wellbore, section | `dim_hole_section.start_md_m` |
 | section_end_md | depth_m | wellbore, section | `dim_hole_section.end_md_m` |
 | new_hole_drilled | depth_m | wellbore, section | `dim_hole_section.new_hole_drilled_m` |
+| section_start_casing_shoe_md | depth_m | wellbore, section | `dim_hole_section.start_casing_shoe_md_m`: deepest casing shoe when the section starts |
+| section_casing_shoe_md | depth_m | wellbore, section | `dim_hole_section.casing_shoe_md_m`: shoe of casing set during the section |
+| section_end_tvd | depth_m | wellbore, section | `dim_hole_section.end_tvd_m`: tvd on the section's deepest-md report |
 | report_md | depth_m | wellbore, date | measured depth on that operations day's report |
 | deepest_md | depth_m | wellbore | the deepest reported measured depth |
+| deepest_tvd | depth_m | wellbore | tvd on the deepest-md report |
+| report_tvd | depth_m | wellbore, date | tvd on that operations day's report |
 | total_depth | depth_m | wellbore | Sodir total depth (a technical sidetrack takes its parent's) |
 | section_start_date | date | wellbore, section | operations day of the section's first report |
 | section_end_date | date | wellbore, section | operations day of the section's last report |
@@ -104,6 +125,7 @@ takes either `month` or `start` and `end` (inclusive).
 | completion_date | date | wellbore | Sodir completion date (parent's for a technical sidetrack) |
 | report_count | count | wellbore | daily drilling reports |
 | flagged_report_count | count | wellbore | reports with a before-spud flag |
+| well_duration | days | wellbore | from the start of the first report without a before-spud flag to the end of the last report, in days of 24 h |
 | section_report_count | count | wellbore, section | `dim_hole_section.report_count` |
 | section_hole_size | hole_size_in | wellbore, section | `dim_hole_section.hole_size_in` |
 | section_drilling_rate | rate_m_per_h | wellbore, section | new hole over hours coded drilling -- drill |
@@ -123,8 +145,8 @@ revision turn.
 ## Reporting results
 
 Every scored result reports claim accuracy together with the unsupported rate and the
-unverifiable rate; accuracy is never reported alone. The unsupported and unverifiable rates are
-the shares of all claims with those results. Claim accuracy is defined with the scoring rules,
+unverifiable rate; accuracy is never reported alone. The unverifiable rate is the share of all
+claims that are unverifiable; the unsupported rate counts unclaimed numbers as above. Claim accuracy is defined with the scoring rules,
 before the freeze.
 
 ## Held-out wellbores

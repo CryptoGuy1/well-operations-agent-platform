@@ -40,7 +40,7 @@ no wellbore is named (ADR 0002 D8). The warehouse builds all wellbores, held-out
 | staging | `stg_witsml__tubular_component` | model | 1,392 | 19 |
 | staging | `stg_witsml__wb_geometry_section` | model | 109 | 23 |
 | intermediate | `int_ddr__activity_section` | model | 23,447 | 11 |
-| intermediate | `int_ddr__hole_section` | model | 261 | 15 |
+| intermediate | `int_ddr__hole_section` | model | 261 | 18 |
 | intermediate | `int_ddr__report_flag` | model | 488 | 5 |
 | intermediate | `int_production__daily_attributed` | model | 15,634 | 29 |
 | intermediate | `int_production__daily_flag` | model | 4 | 6 |
@@ -48,7 +48,7 @@ no wellbore is named (ADR 0002 D8). The warehouse builds all wellbores, held-out
 | intermediate | `int_production__monthly_attributed` | model | 526 | 16 |
 | intermediate | `int_production__monthly_flag` | model | 39 | 6 |
 | intermediate | `int_witsml__log_flag` | model | 1 | 5 |
-| marts | `dim_hole_section` | model | 261 | 20 |
+| marts | `dim_hole_section` | model | 261 | 23 |
 | marts | `dim_wellbore` | model | 8,491 | 14 |
 | marts | `fct_lost_time` | model | 1,766 | 9 |
 | marts | `fct_production_monthly_reconciliation` | model | 119 | 22 |
@@ -172,6 +172,9 @@ Columns with at least one null, per model; a model without nulls is listed once.
 | `int_ddr__hole_section` | `stated_start_utc` | 2 | 0.8% |
 | `int_ddr__hole_section` | `start_md_m` | 17 | 6.5% |
 | `int_ddr__hole_section` | `end_md_m` | 37 | 14.2% |
+| `int_ddr__hole_section` | `end_tvd_m` | 72 | 27.6% |
+| `int_ddr__hole_section` | `start_casing_shoe_md_m` | 9 | 3.4% |
+| `int_ddr__hole_section` | `casing_shoe_md_m` | 222 | 85.1% |
 | `int_ddr__report_flag` | `detail` | 9 | 1.8% |
 | `int_production__daily_attributed` | `attribution_reason` | 14,469 | 92.5% |
 | `int_production__daily_attributed` | `on_stream_hours` | 285 | 1.8% |
@@ -211,6 +214,9 @@ Columns with at least one null, per model; a model without nulls is listed once.
 | `dim_hole_section` | `stated_start_utc` | 2 | 0.8% |
 | `dim_hole_section` | `start_md_m` | 17 | 6.5% |
 | `dim_hole_section` | `end_md_m` | 37 | 14.2% |
+| `dim_hole_section` | `end_tvd_m` | 72 | 27.6% |
+| `dim_hole_section` | `start_casing_shoe_md_m` | 9 | 3.4% |
+| `dim_hole_section` | `casing_shoe_md_m` | 222 | 85.1% |
 | `dim_hole_section` | `bit_size_evidence_in` | 235 | 90.0% |
 | `dim_wellbore` | `parent_key` | 8,487 | 100.0% |
 | `dim_wellbore` | `field_name` | 1,273 | 15.0% |
@@ -326,14 +332,14 @@ From the last `dbt build` (dbt 1.12.6).
 |---|---|---|
 | model | success | 32 |
 | seed | success | 2 |
-| test | pass | 245 |
+| test | pass | 248 |
 
 Tests by type:
 
 | Test | Status | Count |
 |---|---|---|
 | `accepted_values` | pass | 51 |
-| `non_negative` | pass | 13 |
+| `non_negative` | pass | 16 |
 | `not_null` | pass | 103 |
 | `ratio_requires_nonzero` | pass | 12 |
 | `relationships` | pass | 29 |

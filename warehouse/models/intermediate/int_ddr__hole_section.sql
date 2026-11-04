@@ -10,6 +10,11 @@
 --   marked inferred; inferred_share is the share of such reports.
 -- - start_date_local and end_date_local are the operations days of the section's first and last
 --   reports: the local date of each report's start, from its original offset.
+-- - Casing (mdCsgLast, the deepest casing shoe set so far): start_casing_shoe_md_m is the shoe on
+--   the section's first report that states one; casing_shoe_md_m is the deepest shoe in the
+--   section if it is deeper than that, i.e. casing set during the section, else null.
+-- - end_tvd_m: tvd on the report with the section's deepest md (earliest such report); null where
+--   that report records no tvd.
 with reports as (
     select
         report_file,
@@ -18,6 +23,8 @@ with reports as (
         cast({{ local_time('start_utc', 'start_offset') }} as date) as operations_day,
         end_utc,
         md_m,
+        tvd_m,
+        md_csg_last_m,
         dia_hole_in,
         md_dia_hole_start_m,
         dia_hole_start_utc
@@ -104,6 +111,14 @@ select
     arg_min(dia_hole_start_utc, start_utc) as stated_start_utc,
     arg_min(md_dia_hole_start_m, start_utc) as start_md_m,
     max(md_m) as end_md_m,
+    arg_max(tvd_m, (md_m, -epoch(start_utc))) filter (where md_m is not null) as end_tvd_m,
+    arg_min(md_csg_last_m, (start_utc, report_file)) filter (where md_csg_last_m is not null)
+        as start_casing_shoe_md_m,
+    case
+        when max(md_csg_last_m) > arg_min(md_csg_last_m, (start_utc, report_file))
+            filter (where md_csg_last_m is not null)
+            then max(md_csg_last_m)
+    end as casing_shoe_md_m,
     count(*) as report_count,
     avg(
         case when dia_hole_in is null and hole_size_in is not null then 1.0 else 0.0 end

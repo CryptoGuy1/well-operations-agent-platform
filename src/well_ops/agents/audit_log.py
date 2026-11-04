@@ -41,7 +41,7 @@ from typing import Any, Literal, Self
 
 import duckdb
 
-from well_ops.agents.checker import Checker, ClaimResult, summary
+from well_ops.agents.checker import Checker, ClaimResult, UnclaimedNumber, summary
 from well_ops.agents.render import render_document
 from well_ops.agents.schema import Document
 from well_ops.settings import Settings
@@ -295,10 +295,16 @@ class RunLog:
     def draft(self, document: Document) -> None:
         self._append("draft", {"document": document.model_dump(mode="json")})
 
-    def check(self, results: Sequence[ClaimResult]) -> None:
+    def check(
+        self, results: Sequence[ClaimResult], unclaimed: Sequence[UnclaimedNumber] = ()
+    ) -> None:
         self._append(
             "check",
-            {"results": [r.as_dict() for r in results], "summary": summary(results)},
+            {
+                "results": [r.as_dict() for r in results],
+                "unclaimed": [u.as_dict() for u in unclaimed],
+                "summary": {**summary(results), "unclaimed_number": len(unclaimed)},
+            },
         )
 
     def end(self, status: Status, error: str | None = None) -> None:
@@ -406,6 +412,11 @@ class Run:
         check = self.last("check")
         return None if check is None else [ClaimResult.from_dict(r) for r in check["results"]]
 
+    @property
+    def unclaimed(self) -> list[UnclaimedNumber]:
+        check = self.last("check")
+        return [UnclaimedNumber.from_dict(u) for u in (check or {}).get("unclaimed", [])]
+
 
 # --- DuckDB loader ---------------------------------------------------------------------------
 
@@ -416,7 +427,7 @@ TABLES = {
         ended_at timestamptz, status varchar, model_calls integer, tool_calls integer,
         input_tokens bigint, output_tokens bigint, cost_usd double, elapsed_ms bigint,
         claims integer, verified integer, contradicted integer, unsupported integer,
-        unverifiable integer, approval varchar""",
+        unverifiable integer, unclaimed_numbers integer, approval varchar""",
     "events": "run_id varchar, seq integer, type varchar, event_at timestamptz, data json",
     "tool_calls": """
         run_id varchar, seq integer, server varchar, tool varchar, arguments json,
@@ -451,6 +462,7 @@ def _run_row(run: Run) -> tuple[Any, ...]:
         end.get("elapsed_ms"),
         len(run.results) if run.results is not None else None,
         *counts.values(),
+        len(run.unclaimed) if run.results is not None else None,
         approval["decision"] if approval else None,
     )
 
@@ -580,10 +592,14 @@ def replay(path: Path, checker: Checker | None = None) -> str:
     elif results is None:
         lines.append("The draft was not checked, so it is not rendered (ADR 0004).")
     else:
-        rendered = render_document(document, results).rstrip().splitlines()
+        rendered = render_document(document, results, run.unclaimed).rstrip().splitlines()
         lines += ["#" + line if line.startswith("#") else line for line in rendered]
         if checker is not None:
             lines += ["", *_recheck(document, results, checker)]
+            lines.append(
+                f"Unclaimed numbers: {len(run.unclaimed)} logged, "
+                f"{len(checker.unclaimed(document))} now."
+            )
     return "\n".join(lines) + "\n"
 
 

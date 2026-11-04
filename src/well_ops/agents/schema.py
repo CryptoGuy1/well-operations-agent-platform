@@ -36,6 +36,8 @@ class ClaimType(StrEnum):
     HOLE_SIZE_IN = "hole_size_in"
     RATE_M_PER_H = "rate_m_per_h"
     VOLUME_SM3 = "volume_sm3"
+    DAYS = "days"
+    PERCENT = "percent"
     CODE = "code"
     QUOTE = "quote"
 
@@ -49,6 +51,8 @@ UNITS: dict[ClaimType, str | None] = {
     ClaimType.HOLE_SIZE_IN: "in",
     ClaimType.RATE_M_PER_H: "m/h",
     ClaimType.VOLUME_SM3: "Sm3",
+    ClaimType.DAYS: "d",
+    ClaimType.PERCENT: "%",
     ClaimType.CODE: None,
     ClaimType.QUOTE: None,
 }
@@ -61,6 +65,8 @@ NUMERIC = frozenset(
         ClaimType.HOLE_SIZE_IN,
         ClaimType.RATE_M_PER_H,
         ClaimType.VOLUME_SM3,
+        ClaimType.DAYS,
+        ClaimType.PERCENT,
     }
 )
 

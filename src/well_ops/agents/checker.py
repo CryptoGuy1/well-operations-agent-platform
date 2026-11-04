@@ -34,7 +34,7 @@ import duckdb
 
 from well_ops.agents.schema import Claim, ClaimType, Document, Scalar
 from well_ops.connectors import evidence
-from well_ops.connectors.base import connect, resolve_wellbore
+from well_ops.connectors.base import connect, local_iso, resolve_wellbore
 from well_ops.connectors.drilling_reports.tools import REPORT_DATES, REPORT_DAY
 from well_ops.connectors.errors import ToolError
 from well_ops.connectors.guard import HeldOutGuard
@@ -66,6 +66,8 @@ TOLERANCES: dict[ClaimType, Tolerance] = {
     ClaimType.RATE_M_PER_H: Tolerance(relative=0.02),
     ClaimType.HOLE_SIZE_IN: Tolerance(absolute=0.01),
     ClaimType.VOLUME_SM3: Tolerance(relative=0.005),
+    ClaimType.DAYS: Tolerance(absolute=0.05),
+    ClaimType.PERCENT: Tolerance(absolute=0.1),  # percentage points
     ClaimType.COUNT: Tolerance(),
 }
 
@@ -354,6 +356,16 @@ def section_drilling_rate(ctx: _Context, scope: Scope) -> Computed:
     return Computed(rate, frozenset(ids))
 
 
+def activity_date(ctx: _Context, scope: Scope) -> Computed:
+    """The local start date of the cited activities (all must share it)."""
+    ctx.check_cited_wellbore(scope)
+    activities = ctx.cited_of("ddr:activity")
+    days = sorted(
+        {(local_iso(row["start_utc"], row["start_offset"]) or "")[:10] for _, row in activities}
+    )
+    return Computed("; ".join(days) or None, frozenset(str(eid) for eid, _ in activities))
+
+
 def activity_duration(ctx: _Context, scope: Scope) -> Computed:
     """The summed duration of the cited activities."""
     ctx.check_cited_wellbore(scope)
@@ -395,7 +407,8 @@ def deepest_md(ctx: _Context, scope: Scope) -> Computed:
 
 
 def _report_dates(index: int) -> Callable[[_Context, Scope], Computed]:
-    """One column of REPORT_DATES: 1 count, 2 first, 3 last, 4 first unflagged, 5 flagged."""
+    """One column of REPORT_DATES: 1 count, 2 first, 3 last, 4 first unflagged, 5 flagged,
+    6 duration in days."""
 
     def compute(ctx: _Context, scope: Scope) -> Computed:
         key = ctx.wellbore(scope)
@@ -403,9 +416,74 @@ def _report_dates(index: int) -> Callable[[_Context, Scope], Computed]:
         value = rows[0][index] if rows else (0 if index in (1, 5) else None)
         if isinstance(value, dt.date):
             value = value.isoformat()
+        elif isinstance(value, float):
+            value = _round(value)
         return Computed(value, frozenset({_wellbore_evidence(key)}))
 
     return compute
+
+
+def deepest_tvd(ctx: _Context, scope: Scope) -> Computed:
+    """tvd on the deepest-md report, the report well_overview names."""
+    key = ctx.wellbore(scope)
+    rows = ctx.rows(
+        f"""
+        select report_file, tvd_m from {REPORT}
+        where wellbore_key = ? and md_m is not null
+        order by md_m desc, start_utc, report_file limit 1
+        """,
+        [key],
+    )
+    ids = {_wellbore_evidence(key)} | {_id("ddr:report", report_file=f) for f, _ in rows}
+    return Computed(_round(rows[0][1]) if rows else None, frozenset(ids))
+
+
+def report_tvd(ctx: _Context, scope: Scope) -> Computed:
+    """tvd on the report of one operations day, as the report tool."""
+    key = ctx.wellbore(scope)
+    rows = ctx.rows(
+        f"""
+        select report_file, tvd_m from {REPORT}
+        where wellbore_key = ? and {REPORT_DAY} = ?
+        order by report_file limit 1
+        """,
+        [key, scope.date("date")],
+    )
+    if not rows:
+        raise _Fail(Verdict.UNSUPPORTED, "report_not_found")
+    report_file, tvd = rows[0]
+    return Computed(_round(tvd), frozenset({_id("ddr:report", report_file=report_file)}))
+
+
+def _activity_hours(ctx: _Context, key: str, number: int | None) -> tuple[float, set[str]]:
+    """Activity hours of a wellbore, or of one of its sections, and the sections' ids."""
+    section = None if number is None else _section_id(key, number)
+    rows = ctx.rows(
+        f"""
+        select section_id, activity_hours from {HOLE_SECTION}
+        where wellbore_key = ? and (cast(? as varchar) is null or section_id = ?)
+        """,
+        [key, section, section],
+    )
+    ids = {_id("ddr:hole-section", wellbore_key=key, section=s.split("#", 1)[1]) for s, _ in rows}
+    return sum(h or 0 for _, h in rows), ids
+
+
+def total_activity_hours(ctx: _Context, scope: Scope) -> Computed:
+    key = ctx.wellbore(scope)
+    hours, ids = _activity_hours(ctx, key, None)
+    return Computed(_round(hours), frozenset({*ids, _wellbore_evidence(key)}))
+
+
+def lost_time_share(ctx: _Context, scope: Scope) -> Computed:
+    """Lost hours of one tier as a percentage of the activity hours (wellbore or section)."""
+    lost = _lost_time(ctx, scope, tiered=True, column="hours")
+    key = ctx.wellbore(scope)
+    number = scope.integer("section") if scope.has("section") else None
+    total, _ = _activity_hours(ctx, key, number)
+    if not total or lost.value is None:
+        return Computed(None, lost.supporting)
+    return Computed(_round(100 * float(lost.value) / total), lost.supporting)
 
 
 def _sodir_column(column: str) -> Callable[[_Context, Scope], Computed]:
@@ -551,6 +629,7 @@ def _metric(
 
 
 H, M, D, N = ClaimType.HOURS, ClaimType.DEPTH_M, ClaimType.DATE, ClaimType.COUNT
+DAYS, PCT = ClaimType.DAYS, ClaimType.PERCENT
 WELLBORE, SECTION = ("wellbore",), ("wellbore", "section")
 MONTHS = ("month", "start", "end")
 
@@ -562,12 +641,20 @@ METRICS: dict[str, Metric] = {
     "code_hours": _metric(H, ("wellbore", "code", "section"), code_hours),
     "section_activity_hours": _metric(H, SECTION, _section_column("activity_hours")),
     "section_interruption_hours": _metric(H, SECTION, _section_column("interruption_hours")),
+    "total_activity_hours": _metric(H, WELLBORE, total_activity_hours),
+    "lost_time_share": _metric(PCT, ("wellbore", "tier", "section"), lost_time_share),
     "activity_duration": _metric(H, WELLBORE, activity_duration),
+    "activity_date": _metric(D, WELLBORE, activity_date),
     "section_start_md": _metric(M, SECTION, _section_column("start_md_m")),
     "section_end_md": _metric(M, SECTION, _section_column("end_md_m")),
     "new_hole_drilled": _metric(M, SECTION, _section_column("new_hole_drilled_m")),
+    "section_start_casing_shoe_md": _metric(M, SECTION, _section_column("start_casing_shoe_md_m")),
+    "section_casing_shoe_md": _metric(M, SECTION, _section_column("casing_shoe_md_m")),
+    "section_end_tvd": _metric(M, SECTION, _section_column("end_tvd_m")),
     "report_md": _metric(M, ("wellbore", "date"), report_md),
     "deepest_md": _metric(M, WELLBORE, deepest_md),
+    "deepest_tvd": _metric(M, WELLBORE, deepest_tvd),
+    "report_tvd": _metric(M, ("wellbore", "date"), report_tvd),
     "total_depth": _metric(M, WELLBORE, _sodir_column("total_depth_m")),
     "section_start_date": _metric(D, SECTION, _section_column("start_date_local")),
     "section_end_date": _metric(D, SECTION, _section_column("end_date_local")),
@@ -578,6 +665,7 @@ METRICS: dict[str, Metric] = {
     "completion_date": _metric(D, WELLBORE, _sodir_column("completion_date")),
     "report_count": _metric(N, WELLBORE, _report_dates(1)),
     "flagged_report_count": _metric(N, WELLBORE, _report_dates(5)),
+    "well_duration": _metric(DAYS, WELLBORE, _report_dates(6)),
     "section_report_count": _metric(N, SECTION, _section_column("report_count")),
     "section_hole_size": _metric(ClaimType.HOLE_SIZE_IN, SECTION, _section_column("hole_size_in")),
     "section_drilling_rate": _metric(ClaimType.RATE_M_PER_H, SECTION, section_drilling_rate),
@@ -652,6 +740,71 @@ def fetch(cur: duckdb.DuckDBPyConnection, eid: evidence.EvidenceId) -> Row | Non
     return dict(zip(names, found[0], strict=True)) if found else None
 
 
+# --- Unclaimed numbers -----------------------------------------------------------------------
+
+# A number not inside a word, wellbore name or code (15/9-F-11, T2, 12-1/4 stay out), with
+# optional thousands separators and decimals.
+NUMBER = re.compile(r"(?<![\w/.,-])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(?![\w/-]|[.,]\d)")
+ISO_DATE_TEXT = re.compile(r"(?<![\w-])(\d{4}-\d{2}-\d{2})(?![\w-])")
+MONTH_TEXT = re.compile(r"(?<![\w-])(\d{4}-\d{2})(?![\w-])")
+# Identifiers: section numbers ("section 2", "sections 1, 2 and 4") and evidence ids in backticks.
+IDENTIFIERS = re.compile(r"`[^`]*`|\b[Ss]ections?\s+\d+(?:\s*(?:,|and|or|to|-|\u2013)\s*\d+)*")
+
+
+@dataclass(frozen=True)
+class UnclaimedNumber:
+    """A number (or date) in a sentence's text that no claim of the sentence states."""
+
+    section: int  # index of the section in the document
+    sentence: int  # index of the sentence in the section
+    text: str  # the number as written
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"section": self.section, "sentence": self.sentence, "text": self.text}
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> Self:
+        return cls(int(data["section"]), int(data["sentence"]), str(data["text"]))
+
+
+def _covers(written: str, value: object) -> bool:
+    """Whether a claim value, rounded to the precision written, is the written number."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return False
+    number = float(written.replace(",", ""))
+    decimals = len(written.split(".", 1)[1]) if "." in written else 0
+    return bool(abs(number - float(value)) <= 0.5 * 10**-decimals + 1e-9)
+
+
+def unclaimed_numbers(document: Document) -> list[UnclaimedNumber]:
+    """Every number and date in sentence text that is not an identifier and that no claim of
+    the same sentence states (ADR 0004: every quantity in a sentence is a claim)."""
+    found = []
+    for i, section in enumerate(document.sections):
+        for j, sentence in enumerate(section.sentences):
+            text = IDENTIFIERS.sub(" ", sentence.text)
+            values = [c.value for c in sentence.claims]
+            dates = {str(c.value) for c in sentence.claims if c.type is ClaimType.DATE}
+            months = {
+                str(v)
+                for c in sentence.claims
+                for k, v in c.what.scope.items()
+                if k in ("month", "start", "end")
+            }
+            for match in ISO_DATE_TEXT.finditer(text):
+                if match.group(1) not in dates:
+                    found.append(UnclaimedNumber(i, j, match.group(1)))
+            text = ISO_DATE_TEXT.sub(" ", text)
+            for match in MONTH_TEXT.finditer(text):
+                if match.group(1) not in months:
+                    found.append(UnclaimedNumber(i, j, match.group(1)))
+            text = MONTH_TEXT.sub(" ", text)
+            for match in NUMBER.finditer(text):
+                if not any(_covers(match.group(1), v) for v in values):
+                    found.append(UnclaimedNumber(i, j, match.group(1)))
+    return found
+
+
 # --- The checker -----------------------------------------------------------------------------
 
 
@@ -674,6 +827,10 @@ class Checker:
     def check(self, document: Document) -> list[ClaimResult]:
         """One result per claim, in document order."""
         return [self.check_claim(claim) for claim in document.claims()]
+
+    @staticmethod
+    def unclaimed(document: Document) -> list[UnclaimedNumber]:
+        return unclaimed_numbers(document)
 
     def check_claim(self, claim: Claim) -> ClaimResult:
         try:

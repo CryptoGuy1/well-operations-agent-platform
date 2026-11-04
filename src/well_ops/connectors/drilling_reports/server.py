@@ -56,8 +56,12 @@ def build_server(tools: DrillingReports) -> ConnectorServer:
     def well_overview(wellbore_key: Wellbore) -> dict[str, Any]:
         """One wellbore's drilling reports: report count, first and last report dates as published
         (operations days, local time), the first report date without a before-spud flag and the
-        number of reports with such a flag, the deepest measured depth reported and the report
-        that states it, and the number of reports with each data-quality flag."""
+        number of reports with such a flag, the deepest measured depth reported, the tvd on that
+        report (null where not reported) and the report that states it, and the number of reports
+        with each data-quality flag. `duration_days` runs from the start of the first report
+        without a before-spud flag to the end of the last report (days of 24 h).
+        `total_activity_hours` sums all activities; primary and possible lost hours and their
+        shares of the total activity hours (`*_lost_share_pct`, percent) are given per tier."""
         return tools.well_overview(wellbore_key)
 
     @server.tool(annotations=READ_ONLY)
@@ -65,16 +69,20 @@ def build_server(tools: DrillingReports) -> ConnectorServer:
         """Hole sections of a wellbore, in drilling order: hole size and its source ('report' or
         'unknown'), operation phase, start and end (UTC), start_date_local and end_date_local
         (the operations days of the section's first and last reports, local dates), measured
-        depths, new hole drilled, activity and interruption hours. `bit_size_evidence_in` is
-        evidence only, never a hole size. Section 0 ('before_first_section') holds activities
-        before the first stated section."""
+        depths, `end_tvd_m` (tvd on the report with the section's deepest md; null where not
+        reported), new hole drilled, activity and interruption hours, and casing:
+        `start_casing_shoe_md_m` is the deepest casing shoe when the section starts and
+        `casing_shoe_md_m` the shoe of casing set during the section (null if none was set).
+        Section 0 ('before_first_section') holds activities before the first stated section."""
         return tools.hole_sections(wellbore_key)
 
     @server.tool(annotations=READ_ONLY)
     def lost_time(wellbore_key: Wellbore, group_by: GroupBy = "section") -> dict[str, Any]:
         """Lost-time hours of a wellbore, grouped by hole section, activity code or tier. Only
         codes in the 'primary' and 'possible' lost-time tiers are counted; 'possible' codes may
-        or may not be lost time and should be reported separately."""
+        or may not be lost time and should be reported separately. Grouped by section, each row
+        also gives the primary and possible hours as shares of the section's activity hours
+        (`*_share_pct`, percent)."""
         return tools.lost_time(wellbore_key, group_by)
 
     @server.tool(annotations=READ_ONLY)

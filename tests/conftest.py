@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Iterable, Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -92,17 +92,19 @@ CHECKER_SCHEMA = """
 create schema intermediate; create schema reference;
 create table staging.stg_ddr__report (
     report_file varchar, wellbore_key varchar, start_utc timestamp, start_offset varchar,
-    md_m double, comments varchar);
+    end_utc timestamp, md_m double, tvd_m double, comments varchar);
 create table intermediate.int_ddr__report_flag (
     report_file varchar, wellbore_key varchar, flag varchar);
 create table staging.stg_ddr__activity (
     report_file varchar, activity_number integer, wellbore_key varchar, duration_hours double,
-    category varchar, subcategory varchar, comments varchar);
+    category varchar, subcategory varchar, comments varchar, start_utc timestamp,
+    start_offset varchar);
 create table marts.dim_hole_section (
     section_id varchar, wellbore_key varchar, section_number hugeint, hole_size_in double,
     start_md_m double, end_md_m double, report_count bigint, activity_hours double,
     interruption_hours double, new_hole_drilled_m double, start_date_local date,
-    end_date_local date);
+    end_date_local date, start_casing_shoe_md_m double, casing_shoe_md_m double,
+    end_tvd_m double);
 create table marts.fct_lost_time (
     wellbore_key varchar, section_id varchar, category varchar, subcategory varchar,
     tier varchar, hours double, activities bigint);
@@ -130,11 +132,14 @@ JAN, FEB = date(2020, 1, 1), date(2020, 2, 1)
 
 def _section(n: int, size: float, start: float, end: float, new_hole: float) -> tuple[Any, ...]:
     day = date(2020, 1, n)
-    return (f"{T2}#{n}", T2, n, size, start, end, 3, 72.0, 4.0, new_hole, day, day)
+    casing = end - 10 if new_hole else None  # casing set where new hole was drilled
+    return (f"{T2}#{n}", T2, n, size, start, end, 3, 72.0, 4.0, new_hole, day, day, start - 10,
+            casing, end - 100)  # fmt: skip
 
 
 def _report(name: str, key: str, utc: datetime, md: float | None) -> tuple[Any, ...]:
-    return (name, key, utc, "+02:00", md, None)
+    tvd = None if md is None else md - 100  # a report covers one day
+    return (name, key, utc, "+02:00", utc + timedelta(days=1), md, tvd, None)
 
 
 @pytest.fixture
@@ -158,9 +163,40 @@ def warehouse(tmp_path: Path, mcp: Any) -> Path:
             ],
             "intermediate.int_ddr__report_flag": [("R0", T2, "before_sodir_spud")],
             "staging.stg_ddr__activity": [
-                ("R1", 1, T2, 2.5, "interruption", "wait", f"Waited on weather. {PERSON} on deck."),
-                ("R1", 2, T2, 3.0, "drilling", "drill", "Drilled 12 1/4in hole to 1500 m."),
-                ("RH", 1, HELD_OUT, 1.0, "drilling", "drill", "Drilled ahead."),
+                # Both R1 activities start on local day 2020-01-02 (UTC+2).
+                (
+                    "R1",
+                    1,
+                    T2,
+                    2.5,
+                    "interruption",
+                    "wait",
+                    f"Waited on weather. {PERSON} on deck.",
+                    datetime(2020, 1, 1, 22),
+                    "+02:00",
+                ),
+                (
+                    "R1",
+                    2,
+                    T2,
+                    3.0,
+                    "drilling",
+                    "drill",
+                    "Drilled 12 1/4in hole to 1500 m.",
+                    datetime(2020, 1, 2, 1),
+                    "+02:00",
+                ),
+                (
+                    "RH",
+                    1,
+                    HELD_OUT,
+                    1.0,
+                    "drilling",
+                    "drill",
+                    "Drilled ahead.",
+                    datetime(2020, 1, 1, 22),
+                    "+02:00",
+                ),
             ],
             "marts.dim_hole_section": [
                 _section(1, 26.0, 0.0, 1000.0, 1000.0),

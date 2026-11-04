@@ -47,8 +47,9 @@ create table marts.dim_hole_section (
     hole_size_in double, hole_size_source varchar, start_utc timestamp, end_utc timestamp,
     stated_start_utc timestamp, start_md_m double, end_md_m double, report_count bigint,
     inferred_share double, operation_phase varchar, activity_hours double,
-    interruption_hours double, new_hole_drilled_m double, bit_size_evidence_in double,
-    start_date_local date, end_date_local date);
+    interruption_hours double, new_hole_drilled_m double, start_date_local date,
+    end_date_local date, start_casing_shoe_md_m double, casing_shoe_md_m double,
+    end_tvd_m double);
 create table marts.fct_lost_time (
     wellbore_key varchar, section_id varchar, section_label varchar, hole_size_in double,
     category varchar, subcategory varchar, tier varchar, hours double, activities bigint);
@@ -73,7 +74,8 @@ def _activity(file: str, n: int, key: str, start: str, hours: float, code: str, 
 def _section(n: int, label: str, size: float | None, new_hole: float) -> tuple[Any, ...]:
     return (f"{T2}#{n}", T2, n, label, size, "report" if size else "unknown",
             datetime(2020, 1, n), datetime(2020, 1, n + 1), None, 500.0, 1000.0, 1, 0.0,
-            "drilling", 20.0, 6.0, new_hole, None, date(2020, 1, n), date(2020, 1, n))  # fmt: skip
+            "drilling", 20.0, 6.0, new_hole, date(2020, 1, n), date(2020, 1, n), 100.0 * n,
+            100.0 * n + 50 if size else None, 900.0)  # fmt: skip
 
 
 @pytest.fixture
@@ -118,7 +120,7 @@ def warehouse(tmp_path: Path) -> Path:
     )
     con.executemany(
         "insert into marts.dim_hole_section values"
-        " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             _section(1, "12.25 in", 12.25, 500.0),
             _section(2, "hole size unknown", None, 0.0),
@@ -211,6 +213,11 @@ def test_well_overview_resolves_names(warehouse: Path) -> None:
     assert row["report_count"] == 2
     assert row["deepest_md_m"] == 1500.0
     assert row["deepest_md_evidence_id"] == f"ddr:report:{R2}"
+    assert row["deepest_tvd_m"] == 1490.0
+    # R2 alone is unflagged and covers one day; 3 sections of 20 h with 4 h primary, 2 h possible.
+    assert (row["duration_days"], row["total_activity_hours"]) == (1.0, 60.0)
+    assert (row["primary_lost_hours"], row["primary_lost_share_pct"]) == (4.0, 6.67)
+    assert (row["possible_lost_hours"], row["possible_lost_share_pct"]) == (2.0, 3.33)
     assert row["first_report_date"] == "2020-01-01"  # published dates are kept
     assert (row["first_unflagged_report_date"], row["flagged_report_count"]) == ("2020-01-02", 1)
     assert row["flagged_reports"] == [
@@ -227,6 +234,9 @@ def test_hole_sections(warehouse: Path) -> None:
         f"ddr:hole-section:{T2}#3",
     ]
     assert rows[1]["hole_size_source"] == "unknown"
+    assert "bit_size_evidence_in" not in rows[0]  # evidence only, kept in the warehouse
+    assert (rows[0]["start_casing_shoe_md_m"], rows[0]["casing_shoe_md_m"]) == (100.0, 150.0)
+    assert (rows[1]["casing_shoe_md_m"], rows[1]["end_tvd_m"]) == (None, 900.0)
     assert rows[0]["start_utc"] == "2020-01-01T00:00:00+00:00"
     assert (rows[1]["start_date_local"], rows[1]["end_date_local"]) == ("2020-01-02", "2020-01-02")
     assert rows[0]["new_hole_drilled_m"] == 500.0
@@ -241,6 +251,7 @@ def test_lost_time_groupings(warehouse: Path) -> None:
         2.0,
     )
     assert section["hours"] == 6.0
+    assert (section["primary_share_pct"], section["possible_share_pct"]) == (20.0, 10.0)
     assert section["evidence_ids"] == [
         f"ddr:lost-time:{T2}#1|interruption -- maintain",
         f"ddr:lost-time:{T2}#1|interruption -- repair",
