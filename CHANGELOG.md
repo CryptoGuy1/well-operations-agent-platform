@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   seven read-only tools: `list_wellbores`, `well_overview`, `hole_sections`, `lost_time`,
   `activities`, `report` and `drilling_rate`. Every tool resolves wellbore names, applies the
   held-out guard, caps rows, redacts text and returns evidence ids; errors never echo the input.
+- Production (`make serve-prod`), Sodir (`make serve-sodir`) and real-time (`make serve-rt`)
+  MCP servers: `monthly_production`, `reconciliation`, `data_quality_flags`, `wellbore_facts`,
+  `field_production`, `list_logs` and `curve_summary`, with the same guard, redaction, row caps
+  and evidence ids. The Sodir server reads the warehouse copy of FactPages, never the internet.
 
 ## [0.2.0-platform] - 2026-10-30
 

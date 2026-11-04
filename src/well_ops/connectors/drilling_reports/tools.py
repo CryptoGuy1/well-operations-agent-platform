@@ -8,28 +8,21 @@ evidence id to every row, and returns an envelope with the row cap and redaction
 from __future__ import annotations
 
 import datetime as dt
-import re
 from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any, Literal
 
-import duckdb
-
 from well_ops.connectors import evidence
 from well_ops.connectors.base import (
-    connect,
-    envelope,
+    ConnectorTools,
+    field_name,
     invalid_arguments,
     iso,
     local_iso,
     local_sql,
-    resolve_wellbore,
     utc_iso,
 )
 from well_ops.connectors.errors import ToolError
-from well_ops.connectors.guard import HeldOutGuard
-from well_ops.connectors.redaction import Redactor
-from well_ops.settings import Settings
 
 Category = Literal[
     "completion",
@@ -44,7 +37,6 @@ GroupBy = Literal["section", "code", "tier"]
 
 LOST_TIME_TIERS = ("primary", "possible")
 RATE_LABEL = "average rate while coded drilling -- drill"
-FIELD = re.compile(r"[A-Za-z0-9 -]{1,40}")
 
 # A report covers one operations day from local midnight; its day is the local start date.
 REPORT_DAY = f"cast({local_sql('start_utc', 'start_offset')} as date)"
@@ -124,57 +116,9 @@ def _lost_time_evidence(section_id: str, category: str, subcategory: str) -> str
     )
 
 
-class DrillingReports:
-    def __init__(
-        self,
-        con: duckdb.DuckDBPyConnection,
-        guard: HeldOutGuard,
-        redactor: Redactor,
-        row_cap: int,
-    ) -> None:
-        self._con = con
-        self.guard = guard
-        self.redactor = redactor
-        self.row_cap = row_cap
-
-    @classmethod
-    def from_settings(cls, settings: Settings) -> DrillingReports:
-        return cls(
-            connect(settings.warehouse_path),
-            HeldOutGuard.from_settings(settings),
-            Redactor.from_file(settings.redaction_denylist_path),
-            settings.tool_row_cap,
-        )
-
-    def _cursor(self) -> duckdb.DuckDBPyConnection:
-        return self._con.cursor()  # one cursor per call: tools run on worker threads
-
-    def _wellbore(self, cur: duckdb.DuckDBPyConnection, text: str) -> str:
-        key = resolve_wellbore(cur, text)
-        self.guard.check(key)
-        return key
-
-    def _envelope(
-        self,
-        sources: Sequence[str],
-        parameters: dict[str, Any],
-        rows: Sequence[dict[str, Any]],
-        cap: int | None = None,
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        return envelope(
-            sources=sources,
-            parameters=parameters,
-            rows=rows,
-            cap=cap or self.row_cap,
-            redactor=self.redactor,
-            **kwargs,
-        )
-
+class DrillingReports(ConnectorTools):
     def list_wellbores(self, field: str = "VOLVE") -> dict[str, Any]:
-        name = " ".join(field.split()).upper()
-        if not FIELD.fullmatch(name):
-            raise invalid_arguments(["field"])
+        name = field_name(field)
         cur = self._cursor()
         rows = cur.execute(
             f"""

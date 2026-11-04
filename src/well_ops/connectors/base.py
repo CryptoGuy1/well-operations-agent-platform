@@ -17,7 +17,7 @@ import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from datetime import UTC, date, datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Self
 
 import duckdb
 from mcp.server.mcpserver import Context, MCPServer
@@ -26,7 +26,9 @@ from mcp.types import CallToolResult, InputRequiredResult, TextContent, ToolAnno
 from pydantic import ValidationError
 
 from well_ops.connectors.errors import ToolError
+from well_ops.connectors.guard import HeldOutGuard
 from well_ops.connectors.redaction import Redactor
+from well_ops.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,7 @@ READ_ONLY = ToolAnnotations(
 
 KEY = re.compile(r"\d+(?::T\d+)?")
 NAME = re.compile(r"[A-Za-z0-9/ ._-]{1,64}")
+FIELD = re.compile(r"[A-Z0-9ÆØÅ /()-]{1,40}")
 
 
 def invalid_arguments(fields: Sequence[str] = ()) -> ToolError:
@@ -125,6 +128,18 @@ def resolve_wellbore(con: duckdb.DuckDBPyConnection, text: str) -> str:
     return str(found[0][0])
 
 
+def field_name(text: str) -> str:
+    """A field name, upper-cased with spaces collapsed, as Sodir and the workbook write it."""
+    name = " ".join(text.split()).upper()
+    if not FIELD.fullmatch(name):
+        raise invalid_arguments(["field"])
+    return name
+
+
+def month_start(value: date) -> date:
+    return value.replace(day=1)
+
+
 def local_sql(utc: str, offset: str) -> str:
     """SQL for a UTC timestamp column shifted to local time by its `+hh:mm` offset column."""
     return (
@@ -180,3 +195,54 @@ def envelope(
         **redacted,
         "redactions": {kind: total[kind] for kind in sorted(total) if total[kind]},
     }
+
+
+class ConnectorTools:
+    """Base of each connector's tools: the read-only warehouse, the guard, the redactor and the
+    row cap."""
+
+    def __init__(
+        self,
+        con: duckdb.DuckDBPyConnection,
+        guard: HeldOutGuard,
+        redactor: Redactor,
+        row_cap: int,
+    ) -> None:
+        self._con = con
+        self.guard = guard
+        self.redactor = redactor
+        self.row_cap = row_cap
+
+    @classmethod
+    def from_settings(cls, settings: Settings) -> Self:
+        return cls(
+            connect(settings.warehouse_path),
+            HeldOutGuard.from_settings(settings),
+            Redactor.from_file(settings.redaction_denylist_path),
+            settings.tool_row_cap,
+        )
+
+    def _cursor(self) -> duckdb.DuckDBPyConnection:
+        return self._con.cursor()  # one cursor per call: tools run on worker threads
+
+    def _wellbore(self, cur: duckdb.DuckDBPyConnection, text: str) -> str:
+        key = resolve_wellbore(cur, text)
+        self.guard.check(key)
+        return key
+
+    def _envelope(
+        self,
+        sources: Sequence[str],
+        parameters: dict[str, Any],
+        rows: Sequence[dict[str, Any]],
+        cap: int | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return envelope(
+            sources=sources,
+            parameters=parameters,
+            rows=rows,
+            cap=cap or self.row_cap,
+            redactor=self.redactor,
+            **kwargs,
+        )

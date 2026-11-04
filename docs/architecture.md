@@ -119,7 +119,7 @@ Every connector tool (ADR 0004) follows these rules:
 | `make dbt-build` | Build and test the warehouse |
 | `make rebuild` | Delete staging and the warehouse, then `make stage` and `make dbt-build` |
 | `make quality` | Write the data-quality report |
-| `make serve-ddr` | Run the drilling-report MCP server on stdio |
+| `make serve-ddr`, `make serve-prod`, `make serve-sodir`, `make serve-rt` | Run the drilling-report, production, Sodir or real-time MCP server on stdio |
 
 ## Held-out wellbores
 
