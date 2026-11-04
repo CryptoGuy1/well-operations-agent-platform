@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -47,7 +47,8 @@ create table marts.dim_hole_section (
     hole_size_in double, hole_size_source varchar, start_utc timestamp, end_utc timestamp,
     stated_start_utc timestamp, start_md_m double, end_md_m double, report_count bigint,
     inferred_share double, operation_phase varchar, activity_hours double,
-    interruption_hours double, new_hole_drilled_m double, bit_size_evidence_in double);
+    interruption_hours double, new_hole_drilled_m double, bit_size_evidence_in double,
+    start_date_local date, end_date_local date);
 create table marts.fct_lost_time (
     wellbore_key varchar, section_id varchar, section_label varchar, hole_size_in double,
     category varchar, subcategory varchar, tier varchar, hours double, activities bigint);
@@ -72,7 +73,7 @@ def _activity(file: str, n: int, key: str, start: str, hours: float, code: str, 
 def _section(n: int, label: str, size: float | None, new_hole: float) -> tuple[Any, ...]:
     return (f"{T2}#{n}", T2, n, label, size, "report" if size else "unknown",
             datetime(2020, 1, n), datetime(2020, 1, n + 1), None, 500.0, 1000.0, 1, 0.0,
-            "drilling", 20.0, 6.0, new_hole, None)  # fmt: skip
+            "drilling", 20.0, 6.0, new_hole, None, date(2020, 1, n), date(2020, 1, n))  # fmt: skip
 
 
 @pytest.fixture
@@ -117,7 +118,7 @@ def warehouse(tmp_path: Path) -> Path:
     )
     con.executemany(
         "insert into marts.dim_hole_section values"
-        " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             _section(1, "12.25 in", 12.25, 500.0),
             _section(2, "hole size unknown", None, 0.0),
@@ -227,6 +228,7 @@ def test_hole_sections(warehouse: Path) -> None:
     ]
     assert rows[1]["hole_size_source"] == "unknown"
     assert rows[0]["start_utc"] == "2020-01-01T00:00:00+00:00"
+    assert (rows[1]["start_date_local"], rows[1]["end_date_local"]) == ("2020-01-02", "2020-01-02")
     assert rows[0]["new_hole_drilled_m"] == 500.0
 
 

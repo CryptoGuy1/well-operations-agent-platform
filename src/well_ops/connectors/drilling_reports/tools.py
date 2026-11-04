@@ -205,7 +205,7 @@ class DrillingReports(ConnectorTools):
             select section_id, section_number, section_label, hole_size_in, hole_size_source,
                    operation_phase, start_utc, end_utc, stated_start_utc, start_md_m, end_md_m,
                    new_hole_drilled_m, report_count, inferred_share, activity_hours,
-                   interruption_hours, bit_size_evidence_in
+                   interruption_hours, bit_size_evidence_in, start_date_local, end_date_local
             from {HOLE_SECTION} where wellbore_key = ? order by section_number
             """,
             [key],
@@ -223,6 +223,8 @@ class DrillingReports(ConnectorTools):
                     "operation_phase": r[5],
                     "start_utc": utc_iso(r[6]),
                     "end_utc": utc_iso(r[7]),
+                    "start_date_local": iso(r[17]),
+                    "end_date_local": iso(r[18]),
                     "stated_start_utc": utc_iso(r[8]),
                     "start_md_m": r[9],
                     "end_md_m": r[10],

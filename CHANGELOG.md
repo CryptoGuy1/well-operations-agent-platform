@@ -39,6 +39,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `attributed_wellbore_key`, `attribution_source` ('npdid' or 'override') and
   `attribution_reason`. `int_production__monthly_flag` flags `attribution_override` and
   `production_before_completion`.
+- Agent output contract (`well_ops.agents.schema`): documents of sections, sentences and typed
+  claims (hours, depth_m, date, count, hole_size_in, rate_m_per_h, volume_sm3, code, quote), each
+  with a unit, evidence ids and a metric with its scope.
+- Claim checker (`well_ops.agents.checker`): recomputes each claim's metric from the warehouse,
+  requires every cited evidence id to be a row the value rests on, and returns verified,
+  contradicted, unsupported or unverifiable. Production claims are checked by attributed
+  wellbore, with `prod:monthly` ids matched through their published NPDID. Draft tolerances and
+  the metric list in `evaluation/RULES.md`.
+- Run audit log (`well_ops.agents.audit_log`): append-only, hash-chained JSONL run records under
+  `data/runs/`, a DuckDB loader (`make runs-db`) and replay from the log alone
+  (`make replay RUN=<id>`, optionally re-checked against the current warehouse). Run cost is
+  computed from logged tokens and the `WELL_OPS_PRICE_*` settings (prices and the date they
+  were checked; no defaults); without them it stays unknown.
+- `dim_hole_section.start_date_local` and `end_date_local`: the operations days (local dates)
+  of each section's first and last reports, also returned by the `hole_sections` tool and
+  checkable as `section_start_date` and `section_end_date`.
 
 ### Changed
 

@@ -78,7 +78,10 @@ built warehouse and the dbt results. It contains row counts, nulls by column, va
 flag counts and test results, all as aggregates.
 
 **Tools and agents (Phase 3).** Agents will read the marts through typed, read-only tools, one
-connector per source, and never run free-form SQL.
+connector per source, and never run free-form SQL. An agent returns typed claims with evidence
+ids; the claim checker (`well_ops.agents.checker`) recomputes every claim from the warehouse
+under the rules in `evaluation/RULES.md`, and each run is written to an append-only,
+hash-chained log under `data/runs/` that can be replayed without the model.
 
 ## Tool conventions
 
@@ -121,6 +124,8 @@ Every connector tool (ADR 0004) follows these rules:
 | `make rebuild` | Delete staging and the warehouse, then `make stage` and `make dbt-build` |
 | `make quality` | Write the data-quality report |
 | `make serve-ddr`, `make serve-prod`, `make serve-sodir`, `make serve-rt` | Run the drilling-report, production, Sodir or real-time MCP server on stdio |
+| `make runs-db` | Build `data/runs/runs.duckdb` from the run logs |
+| `make replay RUN=<id> [RECHECK=1]` | Render one run to `data/runs/<id>.md` from its log, optionally re-checking its claims |
 
 ## Held-out wellbores
 

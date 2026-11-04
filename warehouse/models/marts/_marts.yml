@@ -141,6 +141,14 @@ models:
                   - plug abandon
                   - moving
                   - none
+      - name: start_date_local
+        description: >
+          Operations day of the section's first report: the local date of the report's start,
+          from its original offset.
+        data_tests: [not_null]
+      - name: end_date_local
+        description: Operations day of the section's last report, as start_date_local.
+        data_tests: [not_null]
       - name: activity_hours
         data_tests: [not_null, non_negative]
       - name: interruption_hours

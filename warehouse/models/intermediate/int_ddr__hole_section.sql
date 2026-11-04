@@ -8,11 +8,14 @@
 --   after section TD).
 -- - Within a section, a missing diaHole carries the section's size forward and the report is
 --   marked inferred; inferred_share is the share of such reports.
+-- - start_date_local and end_date_local are the operations days of the section's first and last
+--   reports: the local date of each report's start, from its original offset.
 with reports as (
     select
         report_file,
         wellbore_key,
         start_utc,
+        cast({{ local_time('start_utc', 'start_offset') }} as date) as operations_day,
         end_utc,
         md_m,
         dia_hole_in,
@@ -95,6 +98,8 @@ select
     case when max(hole_size_in) is null then 'unknown' else 'report' end as hole_size_source,
     min(start_utc) as start_utc,
     max(end_utc) as end_utc,
+    arg_min(operations_day, (start_utc, report_file)) as start_date_local,
+    arg_max(operations_day, (start_utc, report_file)) as end_date_local,
     -- Where and when the section started, as stated by its first report.
     arg_min(dia_hole_start_utc, start_utc) as stated_start_utc,
     arg_min(md_dia_hole_start_m, start_utc) as start_md_m,

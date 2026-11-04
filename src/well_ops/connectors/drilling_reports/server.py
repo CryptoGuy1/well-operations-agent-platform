@@ -63,10 +63,11 @@ def build_server(tools: DrillingReports) -> ConnectorServer:
     @server.tool(annotations=READ_ONLY)
     def hole_sections(wellbore_key: Wellbore) -> dict[str, Any]:
         """Hole sections of a wellbore, in drilling order: hole size and its source ('report' or
-        'unknown'), operation phase, start and end (UTC), measured depths, new hole drilled,
-        activity and interruption hours. `bit_size_evidence_in` is evidence only, never a hole
-        size. Section 0 ('before_first_section') holds activities before the first stated
-        section."""
+        'unknown'), operation phase, start and end (UTC), start_date_local and end_date_local
+        (the operations days of the section's first and last reports, local dates), measured
+        depths, new hole drilled, activity and interruption hours. `bit_size_evidence_in` is
+        evidence only, never a hole size. Section 0 ('before_first_section') holds activities
+        before the first stated section."""
         return tools.hole_sections(wellbore_key)
 
     @server.tool(annotations=READ_ONLY)

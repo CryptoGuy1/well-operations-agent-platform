@@ -1,6 +1,6 @@
 .PHONY: setup lint test download download-volve audit stage extract-log dbt-build \
 	dbt-compile rebuild quality serve-ddr \
-	serve-prod serve-sodir serve-rt
+	serve-prod serve-sodir serve-rt runs-db replay
 
 setup:
 	uv sync
@@ -64,3 +64,12 @@ serve-sodir:
 
 serve-rt:
 	uv run python -m well_ops.connectors.realtime
+
+# Run logs (ADR 0004): the runs database, and one run replayed to data/runs/<id>.md.
+runs-db:
+	uv run python scripts/runs.py load
+
+# make replay RUN=<run_id> [RECHECK=1]
+replay:
+	@test -n "$(RUN)" || { echo "usage: make replay RUN=<run_id> [RECHECK=1]"; exit 2; }
+	uv run python scripts/runs.py replay "$(RUN)" $(if $(RECHECK),--recheck)

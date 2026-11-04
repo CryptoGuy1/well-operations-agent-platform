@@ -47,3 +47,13 @@ def test_rejects_out_of_range_values(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WELL_OPS_MAX_STEPS", "0")
     with pytest.raises(ValidationError):
         Settings()
+
+
+def test_prices_are_set_together(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert Settings().price_input_per_mtok_usd is None
+    monkeypatch.setenv("WELL_OPS_PRICE_INPUT_PER_MTOK_USD", "1.5")
+    with pytest.raises(ValidationError, match="together"):
+        Settings()
+    monkeypatch.setenv("WELL_OPS_PRICE_OUTPUT_PER_MTOK_USD", "7.5")
+    monkeypatch.setenv("WELL_OPS_PRICE_CHECKED_ON", "2020-01-01")
+    assert Settings().price_output_per_mtok_usd == 7.5

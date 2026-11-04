@@ -40,7 +40,7 @@ no wellbore is named (ADR 0002 D8). The warehouse builds all wellbores, held-out
 | staging | `stg_witsml__tubular_component` | model | 1,392 | 19 |
 | staging | `stg_witsml__wb_geometry_section` | model | 109 | 23 |
 | intermediate | `int_ddr__activity_section` | model | 23,447 | 11 |
-| intermediate | `int_ddr__hole_section` | model | 261 | 13 |
+| intermediate | `int_ddr__hole_section` | model | 261 | 15 |
 | intermediate | `int_ddr__report_flag` | model | 488 | 5 |
 | intermediate | `int_production__daily_attributed` | model | 15,634 | 29 |
 | intermediate | `int_production__daily_flag` | model | 4 | 6 |
@@ -48,7 +48,7 @@ no wellbore is named (ADR 0002 D8). The warehouse builds all wellbores, held-out
 | intermediate | `int_production__monthly_attributed` | model | 526 | 16 |
 | intermediate | `int_production__monthly_flag` | model | 39 | 6 |
 | intermediate | `int_witsml__log_flag` | model | 1 | 5 |
-| marts | `dim_hole_section` | model | 261 | 18 |
+| marts | `dim_hole_section` | model | 261 | 20 |
 | marts | `dim_wellbore` | model | 8,491 | 14 |
 | marts | `fct_lost_time` | model | 1,766 | 9 |
 | marts | `fct_production_monthly_reconciliation` | model | 119 | 22 |
@@ -326,7 +326,7 @@ From the last `dbt build` (dbt 1.12.6).
 |---|---|---|
 | model | success | 32 |
 | seed | success | 2 |
-| test | pass | 243 |
+| test | pass | 245 |
 
 Tests by type:
 
@@ -334,7 +334,7 @@ Tests by type:
 |---|---|---|
 | `accepted_values` | pass | 51 |
 | `non_negative` | pass | 13 |
-| `not_null` | pass | 101 |
+| `not_null` | pass | 103 |
 | `ratio_requires_nonzero` | pass | 12 |
 | `relationships` | pass | 29 |
 | `singular` | pass | 3 |
