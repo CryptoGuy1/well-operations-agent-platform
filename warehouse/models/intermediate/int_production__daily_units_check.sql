@@ -1,26 +1,30 @@
--- Daily workbook volumes summed per wellbore and month, against the monthly sheet (Sm3), with
--- the ADR 0002 D9 unit decision. See the model description for the rule.
+-- Daily workbook volumes summed per attributed wellbore and month, against the monthly sheet
+-- (Sm3), with the ADR 0002 D9 unit decision. See the model description for the rule.
 {% set quantities = ['oil', 'gas', 'water'] %}
 with daily as (
     select
-        wellbore_key,
+        attributed_wellbore_key as wellbore_key,
+        published_npdid,
         date_trunc('month', production_date) as month_start,
         count(*) as daily_rows,
         {% for q in quantities %}
         sum({{ q }}_volume) as {{ q }}_daily_sm3{{ ',' if not loop.last }}
         {% endfor %}
-    from {{ ref('stg_production__daily') }}
+    from {{ ref('int_production__daily_attributed') }}
     group by all
 ),
 
 monthly as (
-    select wellbore_key, month_start, oil_sm3, gas_sm3, water_sm3
-    from {{ ref('stg_production__monthly') }}
+    select
+        attributed_wellbore_key as wellbore_key, published_npdid, month_start, oil_sm3, gas_sm3,
+        water_sm3
+    from {{ ref('int_production__monthly_attributed') }}
 ),
 
 joined as (
     select
         coalesce(daily.wellbore_key, monthly.wellbore_key) as wellbore_key,
+        coalesce(daily.published_npdid, monthly.published_npdid) as published_npdid,
         cast(coalesce(daily.month_start, monthly.month_start) as date) as month_start,
         coalesce(daily.daily_rows, 0) as daily_rows,
         monthly.wellbore_key is not null as in_monthly_sheet,

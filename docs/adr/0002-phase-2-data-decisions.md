@@ -135,3 +135,9 @@ Made before any agent existed or any evaluation was run.
 
 D3: -999.25, the standard WITSML null value, is also treated as missing. Made before any agent
 existed or any evaluation was run.
+
+### 2026-11-03
+
+D1: production rows keep the published NPDID; an attributed wellbore key may differ only through a
+documented override (seed with reason). One override: 7078 to 7080 (15/9-F-11 to 15/9-F-11 B).
+Made before any agent was scored.

@@ -33,6 +33,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   MCP servers: `monthly_production`, `reconciliation`, `data_quality_flags`, `wellbore_facts`,
   `field_production`, `list_logs` and `curve_summary`, with the same guard, redaction, row caps
   and evidence ids. The Sodir server reads the warehouse copy of FactPages, never the internet.
+- Production attribution (ADR 0002 D1 amendment of 2026-11-03): the
+  `production_attribution_overrides` seed and the `int_production__monthly_attributed` and
+  `int_production__daily_attributed` models keep the workbook's published NPDID and add
+  `attributed_wellbore_key`, `attribution_source` ('npdid' or 'override') and
+  `attribution_reason`. `int_production__monthly_flag` flags `attribution_override` and
+  `production_before_completion`.
+
+### Changed
+
+- Production for workbook NPDID 7078 ("NO 15/9-F-11 H") is attributed to 15/9-F-11 B (7080):
+  15/9-F-11 is an observation well, plugged and abandoned in May 2013. Field totals are
+  unchanged.
+- `int_production__daily_flag`, `int_production__daily_units_check` and the production tools are
+  keyed by the attributed wellbore and carry `published_npdid`; evidence ids still cite the
+  published NPDID.
 
 ## [0.2.0-platform] - 2026-10-30
 

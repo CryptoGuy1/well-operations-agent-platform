@@ -1,19 +1,21 @@
--- Data-quality flags on workbook daily rows: one row per flag per wellbore and day. Values are
--- kept as published; flags only mark them. Volumes are Sm3 (int_production__daily_units_check).
+-- Data-quality flags on attributed workbook daily rows: one row per flag per wellbore and day.
+-- Values are kept as published; flags only mark them. Volumes are Sm3 (int_production__daily_units_check).
 {% set volumes = ['oil', 'gas', 'water', 'water_injected'] %}
 with daily as (
     select
-        wellbore_key,
+        attributed_wellbore_key as wellbore_key,
+        published_npdid,
         production_date,
         {% for v in volumes %}
         {{ v }}_volume as {{ v }}_sm3{{ ',' if not loop.last }}
         {% endfor %}
-    from {{ ref('stg_production__daily') }}
+    from {{ ref('int_production__daily_attributed') }}
 ),
 
 flags as (
     select
         wellbore_key,
+        published_npdid,
         production_date,
         'negative_volume' as flag,
         concat_ws(
@@ -29,6 +31,7 @@ flags as (
 select
     wellbore_key || '|' || production_date || '#' || flag as daily_flag_id,
     wellbore_key,
+    published_npdid,
     production_date,
     flag,
     detail

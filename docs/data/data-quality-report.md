@@ -42,14 +42,18 @@ no wellbore is named (ADR 0002 D8). The warehouse builds all wellbores, held-out
 | intermediate | `int_ddr__activity_section` | model | 23,447 | 11 |
 | intermediate | `int_ddr__hole_section` | model | 261 | 13 |
 | intermediate | `int_ddr__report_flag` | model | 488 | 5 |
-| intermediate | `int_production__daily_flag` | model | 4 | 5 |
-| intermediate | `int_production__daily_units_check` | model | 526 | 23 |
+| intermediate | `int_production__daily_attributed` | model | 15,634 | 29 |
+| intermediate | `int_production__daily_flag` | model | 4 | 6 |
+| intermediate | `int_production__daily_units_check` | model | 526 | 24 |
+| intermediate | `int_production__monthly_attributed` | model | 526 | 16 |
+| intermediate | `int_production__monthly_flag` | model | 39 | 6 |
 | intermediate | `int_witsml__log_flag` | model | 1 | 5 |
 | marts | `dim_hole_section` | model | 261 | 18 |
 | marts | `dim_wellbore` | model | 8,491 | 14 |
 | marts | `fct_lost_time` | model | 1,766 | 9 |
 | marts | `fct_production_monthly_reconciliation` | model | 119 | 22 |
 | reference | `lost_time_codes` | seed | 14 | 3 |
+| reference | `production_attribution_overrides` | seed | 1 | 4 |
 
 Computed by `well_ops.warehouse.quality.load_nodes`, `well_ops.warehouse.quality.null_counts`.
 <!-- /quality:models -->
@@ -169,7 +173,22 @@ Columns with at least one null, per model; a model without nulls is listed once.
 | `int_ddr__hole_section` | `start_md_m` | 17 | 6.5% |
 | `int_ddr__hole_section` | `end_md_m` | 37 | 14.2% |
 | `int_ddr__report_flag` | `detail` | 9 | 1.8% |
-| `int_production__daily_flag` | all 5 columns | 0 |  |
+| `int_production__daily_attributed` | `attribution_reason` | 14,469 | 92.5% |
+| `int_production__daily_attributed` | `on_stream_hours` | 285 | 1.8% |
+| `int_production__daily_attributed` | `avg_downhole_pressure` | 6,654 | 42.6% |
+| `int_production__daily_attributed` | `avg_downhole_temperature` | 6,654 | 42.6% |
+| `int_production__daily_attributed` | `avg_dp_tubing` | 6,654 | 42.6% |
+| `int_production__daily_attributed` | `avg_annulus_pressure` | 7,744 | 49.5% |
+| `int_production__daily_attributed` | `avg_choke_size` | 6,715 | 43.0% |
+| `int_production__daily_attributed` | `avg_choke_uom` | 6,473 | 41.4% |
+| `int_production__daily_attributed` | `avg_whp` | 6,479 | 41.4% |
+| `int_production__daily_attributed` | `avg_wht` | 6,488 | 41.5% |
+| `int_production__daily_attributed` | `dp_choke_size` | 294 | 1.9% |
+| `int_production__daily_attributed` | `oil_volume` | 6,473 | 41.4% |
+| `int_production__daily_attributed` | `gas_volume` | 6,473 | 41.4% |
+| `int_production__daily_attributed` | `water_volume` | 6,473 | 41.4% |
+| `int_production__daily_attributed` | `water_injected_volume` | 9,928 | 63.5% |
+| `int_production__daily_flag` | all 6 columns | 0 |  |
 | `int_production__daily_units_check` | `oil_daily_sm3` | 215 | 40.9% |
 | `int_production__daily_units_check` | `oil_monthly_sm3` | 215 | 40.9% |
 | `int_production__daily_units_check` | `gas_daily_sm3` | 215 | 40.9% |
@@ -179,6 +198,14 @@ Columns with at least one null, per model; a model without nulls is listed once.
 | `int_production__daily_units_check` | `oil_ratio` | 228 | 43.3% |
 | `int_production__daily_units_check` | `gas_ratio` | 228 | 43.3% |
 | `int_production__daily_units_check` | `water_ratio` | 241 | 45.8% |
+| `int_production__monthly_attributed` | `attribution_reason` | 487 | 92.6% |
+| `int_production__monthly_attributed` | `on_stream_hours` | 11 | 2.1% |
+| `int_production__monthly_attributed` | `oil_sm3` | 215 | 40.9% |
+| `int_production__monthly_attributed` | `gas_sm3` | 215 | 40.9% |
+| `int_production__monthly_attributed` | `water_sm3` | 215 | 40.9% |
+| `int_production__monthly_attributed` | `gas_injected_sm3` | 526 | 100.0% |
+| `int_production__monthly_attributed` | `water_injected_sm3` | 325 | 61.8% |
+| `int_production__monthly_flag` | all 6 columns | 0 |  |
 | `int_witsml__log_flag` | all 5 columns | 0 |  |
 | `dim_hole_section` | `hole_size_in` | 173 | 66.3% |
 | `dim_hole_section` | `stated_start_utc` | 2 | 0.8% |
@@ -212,6 +239,7 @@ Columns with at least one null, per model; a model without nulls is listed once.
 | `fct_production_monthly_reconciliation` | `water_workbook_to_net` | 20 | 16.8% |
 | `fct_production_monthly_reconciliation` | `water_gross_to_net` | 20 | 16.8% |
 | `lost_time_codes` | all 3 columns | 0 |  |
+| `production_attribution_overrides` | all 4 columns | 0 |  |
 
 Models with more than 100 columns, summarised (a curve absent from a log is null in that log's rows):
 
@@ -266,6 +294,7 @@ Flags mark doubtful records; flagged records are kept as published.
 | `int_ddr__report_flag` | `depth_not_recorded` | 331 | 15 |
 | `int_ddr__report_flag` | `no_activities` | 9 | 7 |
 | `int_production__daily_flag` | `negative_volume` | 4 | 2 |
+| `int_production__monthly_flag` | `attribution_override` | 39 | 1 |
 | `int_witsml__log_flag` | `outside_report_period` | 1 | 1 |
 
 Computed by `well_ops.warehouse.quality.flag_counts`.
@@ -295,21 +324,21 @@ From the last `dbt build` (dbt 1.12.6).
 
 | Node type | Status | Count |
 |---|---|---|
-| model | success | 29 |
-| seed | success | 1 |
-| test | pass | 217 |
+| model | success | 32 |
+| seed | success | 2 |
+| test | pass | 243 |
 
 Tests by type:
 
 | Test | Status | Count |
 |---|---|---|
-| `accepted_values` | pass | 48 |
+| `accepted_values` | pass | 51 |
 | `non_negative` | pass | 13 |
-| `not_null` | pass | 87 |
+| `not_null` | pass | 101 |
 | `ratio_requires_nonzero` | pass | 12 |
-| `relationships` | pass | 25 |
-| `singular` | pass | 2 |
-| `unique` | pass | 30 |
+| `relationships` | pass | 29 |
+| `singular` | pass | 3 |
+| `unique` | pass | 34 |
 
 Every test passed.
 

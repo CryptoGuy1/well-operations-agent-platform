@@ -82,10 +82,95 @@ models:
                 to: ref('int_ddr__hole_section')
                 field: section_id
 
+  - name: int_production__monthly_attributed
+    description: >
+      Workbook monthly rows with the wellbore their production is attributed to (ADR 0002 D1,
+      amendment of 2026-11-03). published_npdid and published_wellbore_key are the workbook's;
+      attributed_wellbore_key equals published_wellbore_key (attribution_source 'npdid') unless
+      the production_attribution_overrides seed names another wellbore (attribution_source
+      'override', with attribution_reason).
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "attributed_wellbore_key || '|' || month_start"
+    columns:
+      - name: attributed_wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: published_npdid
+        data_tests: [not_null]
+      - name: attribution_source
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [npdid, override]
+      - name: attribution_reason
+        data_tests:
+          - not_null:
+              config:
+                where: "attribution_source = 'override'"
+
+  - name: int_production__daily_attributed
+    description: >
+      Workbook daily rows with their attributed wellbore, by the same rule as
+      int_production__monthly_attributed.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "attributed_wellbore_key || '|' || production_date"
+    columns:
+      - name: attributed_wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: published_npdid
+        data_tests: [not_null]
+      - name: attribution_source
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [npdid, override]
+
+  - name: int_production__monthly_flag
+    description: >
+      Data-quality flags on attributed workbook monthly rows, one row per flag per wellbore and
+      month. Flags mark records; values are kept as published. attribution_override: the row is
+      attributed through the overrides seed; detail gives the published NPDID.
+      production_before_completion: oil, gas or water above zero in a month before the
+      attributed wellbore's Sodir completion month (wellbores without a completion date are not
+      checked); detail gives the completion month. No override follows from this flag.
+    columns:
+      - name: monthly_flag_id
+        data_tests: [unique, not_null]
+      - name: wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: month_start
+        data_tests: [not_null]
+      - name: flag
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [attribution_override, production_before_completion]
+
   - name: int_production__daily_units_check
     description: >
-      Workbook daily volumes summed per wellbore and month (oil_daily_sm3, gas_daily_sm3,
-      water_daily_sm3, from staged oil_volume, gas_volume, water_volume), against the monthly
+      Workbook daily volumes summed per attributed wellbore and month (oil_daily_sm3,
+      gas_daily_sm3, water_daily_sm3, from staged oil_volume, gas_volume, water_volume), against the monthly
       sheet (Sm3), with ratios daily / monthly where both sides are non-zero. Rule (ADR 0002 D9): a wellbore-month counts as non-zero for a quantity
       when either side is non-zero; it agrees when both are non-zero and the ratio is within 1 %
       of 1. If oil, gas and water each agree in at least 95 % of their non-zero months,
@@ -129,8 +214,8 @@ models:
 
   - name: int_production__daily_flag
     description: >
-      Data-quality flags on workbook daily rows, one row per flag per wellbore and day. Flags
-      mark doubtful records; values are kept as published. negative_volume: oil_sm3, gas_sm3,
+      Data-quality flags on attributed workbook daily rows, one row per flag per wellbore and
+      day. Flags mark doubtful records; values are kept as published. negative_volume: oil_sm3, gas_sm3,
       water_sm3 or water_injected_sm3 (staged oil_volume, gas_volume, water_volume,
       water_injected_volume) is below zero; detail lists the negative quantities.
     columns:

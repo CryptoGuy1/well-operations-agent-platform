@@ -23,3 +23,30 @@ seeds:
           - accepted_values:
               arguments:
                 values: [primary, possible]
+
+  - name: production_attribution_overrides
+    description: >
+      Production rows whose workbook NPDID names the wrong wellbore (ADR 0002 D1 amendment of
+      2026-11-03). published_npdid and published_wellbore_code are the workbook's values (the
+      code from the daily sheet); attributed_wellbore_key is the wellbore the production is
+      attributed to, and attribution_reason cites the evidence. Every other production row is
+      attributed by its published NPDID. Adding a row needs an amendment to ADR 0002 before any
+      scored run.
+    config:
+      column_types:
+        published_npdid: bigint
+        published_wellbore_code: varchar
+        attributed_wellbore_key: varchar
+        attribution_reason: varchar
+    columns:
+      - name: published_npdid
+        data_tests: [unique, not_null]
+      - name: attributed_wellbore_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_wellbore')
+                field: wellbore_key
+      - name: attribution_reason
+        data_tests: [not_null]

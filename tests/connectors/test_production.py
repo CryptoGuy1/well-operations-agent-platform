@@ -15,16 +15,24 @@ from well_ops.connectors.production.tools import Production
 from well_ops.connectors.redaction import Redactor
 
 DEV, HELD_OUT = "9001", "9002"
+# The workbook books OVERRIDDEN's production to PUBLISHED; a seed override attributes it back.
+PUBLISHED, OVERRIDDEN = "9004", "9005"
+REASON = "fictional reason"
 
 SCHEMA = """
 create schema intermediate;
-create table staging.stg_production__monthly (
-    wellbore_key varchar, npdid bigint, month_start date, on_stream_hours double, oil_sm3 double,
+create table intermediate.int_production__monthly_attributed (
+    attributed_wellbore_key varchar, attribution_source varchar, attribution_reason varchar,
+    published_npdid bigint, month_start date, on_stream_hours double, oil_sm3 double,
     gas_sm3 double, water_sm3 double, gas_injected_sm3 double, water_injected_sm3 double);
+create table intermediate.int_production__monthly_flag (
+    wellbore_key varchar, month_start date, published_npdid bigint, flag varchar, detail varchar);
 create table intermediate.int_production__daily_flag (
-    wellbore_key varchar, production_date date, flag varchar, detail varchar);
+    wellbore_key varchar, published_npdid bigint, production_date date, flag varchar,
+    detail varchar);
 create table intermediate.int_production__daily_units_check (
-    wellbore_key varchar, month_start date, in_monthly_sheet boolean, daily_volume_unit varchar,
+    wellbore_key varchar, published_npdid bigint, month_start date, in_monthly_sheet boolean,
+    daily_volume_unit varchar,
     oil_agrees boolean, gas_agrees boolean, water_agrees boolean, oil_ratio double,
     gas_ratio double, water_ratio double);
 create table marts.fct_production_monthly_reconciliation (
@@ -40,6 +48,13 @@ create table marts.fct_production_monthly_reconciliation (
 BASES = ("workbook sum", "sodir gross", "sodir net")
 
 
+def _monthly(
+    key: str, npdid: int, month: date, oil: float, source: str = "npdid"
+) -> tuple[object, ...]:
+    reason = REASON if source == "override" else None
+    return (key, source, reason, npdid, month, 700.0, oil, oil * 150, oil / 20, None, None)
+
+
 def _recon(month: date, oil: float) -> tuple[object, ...]:
     per_fluid = (oil + 0.004999999, oil * 1.01, oil * 0.98, 0.99, 1.0200004, 1.03)
     return (month, *BASES, *per_fluid, *per_fluid, *per_fluid)
@@ -50,21 +65,43 @@ def server(tmp_path: Path, mcp: Any) -> ConnectorServer:
     path = mcp.build_warehouse(
         tmp_path / "w.duckdb",
         SCHEMA,
-        [(DEV, "XX/1-A-1", "VOLVE"), (HELD_OUT, "XX/1-A-2", "VOLVE")],
+        [
+            (DEV, "XX/1-A-1", "VOLVE"),
+            (HELD_OUT, "XX/1-A-2", "VOLVE"),
+            (PUBLISHED, "XX/1-A-4", "VOLVE"),
+            (OVERRIDDEN, "XX/1-A-4 B", "VOLVE"),
+        ],
         {
-            "staging.stg_production__monthly": [
-                (DEV, 9001, date(2020, 1, 1), 700.0, 1000.0, 150000.0, 50.0, None, None),
-                (DEV, 9001, date(2020, 2, 1), 650.0, 900.0, 140000.0, 60.0, None, None),
-                (DEV, 9001, date(2020, 3, 1), 600.0, 800.0, 130000.0, 70.0, None, None),
-                (HELD_OUT, 9002, date(2020, 1, 1), 700.0, 500.0, 70000.0, 10.0, None, None),
+            "intermediate.int_production__monthly_attributed": [
+                _monthly(DEV, 9001, date(2020, 1, 1), 1000.0),
+                _monthly(DEV, 9001, date(2020, 2, 1), 900.0),
+                _monthly(DEV, 9001, date(2020, 3, 1), 800.0),
+                _monthly(HELD_OUT, 9002, date(2020, 1, 1), 500.0),
+                _monthly(OVERRIDDEN, 9004, date(2020, 1, 1), 300.0, "override"),
+            ],
+            "intermediate.int_production__monthly_flag": [
+                (
+                    DEV,
+                    date(2020, 1, 1),
+                    9001,
+                    "production_before_completion",
+                    "Sodir completion month 2020-02",
+                ),
+                (
+                    OVERRIDDEN,
+                    date(2020, 1, 1),
+                    9004,
+                    "attribution_override",
+                    "published NPDID 9004",
+                ),
             ],
             "intermediate.int_production__daily_flag": [
-                (DEV, date(2020, 1, 15), "negative_volume", "water volume below zero"),
+                (DEV, 9001, date(2020, 1, 15), "negative_volume", "water volume below zero"),
             ],
             "intermediate.int_production__daily_units_check": [
-                (DEV, date(2020, 1, 1), True, "sm3", True, True, True, 1.0, 1.0, 1.0),
-                (DEV, date(2020, 2, 1), True, "sm3", True, False, True, 1.0, 0.5, 1.0),
-                (DEV, date(2020, 4, 1), False, "sm3", None, None, None, None, None, None),
+                (DEV, 9001, date(2020, 1, 1), True, "sm3", True, True, True, 1.0, 1.0, 1.0),
+                (DEV, 9001, date(2020, 2, 1), True, "sm3", True, False, True, 1.0, 0.5, 1.0),
+                (DEV, 9001, date(2020, 4, 1), False, "sm3", None, None, None, None, None, None),
             ],
             "marts.fct_production_monthly_reconciliation": [
                 _recon(date(2020, 1, 1), 1500.0),
@@ -85,6 +122,30 @@ def test_monthly_production_for_a_wellbore(mcp: Any, server: ConnectorServer) ->
         ("prod:monthly:9001:2020-01", 1000.0),
         ("prod:monthly:9001:2020-02", 900.0),
     ]
+    first = body["rows"][0]
+    assert (first["wellbore_key"], first["published_npdid"], first["attribution_source"]) == (
+        DEV,
+        9001,
+        "npdid",
+    )
+    assert first["attribution_reason"] is None
+
+
+def test_overridden_rows_use_the_attributed_key_and_cite_the_published_npdid(
+    mcp: Any, server: ConnectorServer
+) -> None:
+    window = {"start": "2020-01-01", "end": "2020-12-31"}
+    (row,) = mcp.ok(server, "monthly_production", wellbore_key="XX/1-A-4 B", **window)["rows"]
+    assert row["evidence_id"] == "prod:monthly:9004:2020-01"
+    assert (row["wellbore_key"], row["published_npdid"]) == (OVERRIDDEN, 9004)
+    assert (row["attribution_source"], row["attribution_reason"]) == ("override", REASON)
+    assert mcp.ok(server, "monthly_production", wellbore_key=PUBLISHED, **window)["rows"] == []
+    (flag,) = mcp.ok(server, "data_quality_flags", wellbore_key=OVERRIDDEN)["rows"]
+    assert (flag["kind"], flag["flag"], flag["evidence_id"]) == (
+        "monthly_flag",
+        "attribution_override",
+        "prod:monthly:9004:2020-01",
+    )
 
 
 def test_monthly_production_for_the_field_uses_the_workbook_sum(
@@ -124,6 +185,7 @@ def test_data_quality_flags(mcp: Any, server: ConnectorServer) -> None:
     body = mcp.ok(server, "data_quality_flags", wellbore_key=DEV)
     assert body["units_check_months"] == 3
     assert [(r["kind"], r["evidence_id"]) for r in body["rows"]] == [
+        ("monthly_flag", "prod:monthly:9001:2020-01"),  # production_before_completion
         ("daily_flag", "prod:daily:9001:2020-01-15"),
         ("units_check", "prod:monthly:9001:2020-02"),
         ("units_check", None),  # month missing from the monthly sheet

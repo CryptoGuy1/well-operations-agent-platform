@@ -63,8 +63,9 @@ to UTC with the original offset kept (D5). Personal fields (EDM user attributes,
 file in four schemas:
 
 - `staging`: one view per staged table, renaming, casting and converting units only.
-- `intermediate`: wellbore keys and aliases (D1, D2), hole sections, data-quality flags (D4) and
-  checks such as the daily production unit check (D9).
+- `intermediate`: wellbore keys and aliases (D1, D2), hole sections, data-quality flags (D4),
+  production attributed to wellbores (D1: the published NPDID unless a seed override with a
+  reason says otherwise) and checks such as the daily production unit check (D9).
 - `marts`: the tables later phases read, such as `dim_wellbore`, `dim_hole_section`,
   `fct_lost_time` and `fct_production_monthly_reconciliation`.
 - `reference`: seeds such as the lost-time code tiers (D7).
