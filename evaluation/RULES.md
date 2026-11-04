@@ -75,8 +75,9 @@ date claim of the sentence is in that year; and any number when it appears in th
 quote claim of the sentence, which the checker verifies against the cited row. Casing sizes are
 numbers, not identifiers: a casing size must be backed by a quote claim from the report text
 that states it. Identifiers are not numbers: digits inside wellbore names and codes
-(`15/9-F-11 T2`), section numbers ("section 2", "sections 1, 2 and 4"), NPDIDs ("Sodir wellbore
-5794", "NPDID 5794") and evidence ids in backticks. Every other number is flagged as
+(`15/9-F-11 T2`), section numbers ("section 2", "sections 1, 2 and 4"), campaign numbers
+("campaign 1", "campaigns 2 and 3"), NPDIDs ("Sodir wellbore 5794", "NPDID 5794") and evidence
+ids in backticks. Every other number is flagged as
 `unclaimed_number`. Unclaimed numbers are counted in scored results alongside unsupported claims:
 the unsupported rate is (unsupported claims + unclaimed numbers) / (claims + unclaimed numbers).
 
@@ -154,6 +155,18 @@ labelled as the final draft after checker feedback, and never used for headline 
 because the checker that drives the revision is the same checker that scores. Baselines get no
 revision turn. The revision turn is given when the first draft has a contradicted or unsupported
 claim or an unclaimed number; unverifiable claims alone do not trigger it.
+
+The revision findings give claim ids, results and reasons, never recomputed values. They tell
+the agent to back each unclaimed number with a claim rather than remove it: a date with an
+`activity_date` claim, a number from a report's text with a quote claim, any other number with
+the metric that gives it. A number is to be removed only if no tool row supports it.
+
+Every run report lists, next to the final-draft results, what was removed during revision: the
+claims of the first draft that the final draft does not have (matched by type, value and
+`what`, so a claim kept with corrected evidence or another id is not removed) and the numbers
+and dates of the first draft's text, as written and identifiers excluded, that the final
+draft's text does not have (counted over the whole document). This is reported, not scored;
+first-draft scoring is unchanged.
 
 ## Reporting results
 

@@ -696,6 +696,13 @@ def test_unclaimed_numbers_are_flagged() -> None:
     assert found == [(1, "2013-05-09"), (1, "2014-01"), (1, "8.5")]
 
 
+def test_campaign_numbers_are_identifiers() -> None:
+    document = _document(
+        ("Campaign 1 came before campaigns 2 and 3; the second campaign had 4 casings.", []),
+    )
+    assert [u.text for u in Checker.unclaimed(document)] == ["4"]
+
+
 def test_a_number_rounded_differently_is_unclaimed() -> None:
     rate = claim("rate_m_per_h", 14.871166, [SECTION2], metric="m")
     found = Checker.unclaimed(_document(("Drilled at 14.9 m/h, then 14.8 m/h.", [rate])))

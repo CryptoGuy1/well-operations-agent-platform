@@ -142,6 +142,7 @@ class Outcome:
     results: list[ClaimResult] | None
     checks: list[dict[str, int]] = field(default_factory=list)  # verdict counts per check
     unclaimed: list[UnclaimedNumber] = field(default_factory=list)  # of the last check
+    first_document: Document | None = None  # the scored first draft
 
 
 def _usage(message: Message) -> dict[str, int]:
@@ -164,15 +165,18 @@ def _findings(results: Sequence[ClaimResult], unclaimed: Sequence[UnclaimedNumbe
         ),
         *(
             f"- unclaimed number {u.text!r} in section {u.section + 1}, sentence "
-            f"{u.sentence + 1}: state it as a claim with evidence, or remove it"
+            f"{u.sentence + 1}: back it with a claim"
             for u in unclaimed
         ),
         "",
         "Revise the review once. For each contradicted claim, call the tools again and state "
         "the value they give, with its evidence ids, or remove the claim if the tools do not "
-        "support it. Fix unsupported claims by citing only the rows of the scope stated. State "
-        "each unclaimed number as a claim, or remove it. Then call "
-        f"{SUBMIT} with the full revised document.",
+        "support it. Fix unsupported claims by citing only the rows of the scope stated. Back "
+        "each unclaimed number with a claim rather than removing it: a date with an "
+        "activity_date claim citing the activity, a number from a report's text (a casing size "
+        "or a wind speed, for example) with a quote claim of the text that states it, and any "
+        "other number with the metric that gives it. Remove a number only if no tool row "
+        f"supports it. Then call {SUBMIT} with the full revised document.",
     ]
     return "\n".join(lines)
 
@@ -217,6 +221,7 @@ async def run_agent(
     messages: list[dict[str, Any]] = [{"role": "user", "content": task}]
     logged = 0  # messages already written to the log
     checked: tuple[Document, list[ClaimResult], list[UnclaimedNumber]] | None = None
+    first: Document | None = None
     checks: list[dict[str, int]] = []
     revised = False
     status: Status = "stopped"
@@ -283,6 +288,7 @@ async def run_agent(
 
         if submitted is not None:
             log.draft(submitted)
+            first = first or submitted
             check = checker.check(submitted)
             unclaimed = checker.unclaimed(submitted)
             log.check(check, unclaimed)
@@ -306,4 +312,4 @@ async def run_agent(
     if checked is None:
         return Outcome(log.run_id, log.path, status, error, None, None, checks)
     document, final, unclaimed = checked
-    return Outcome(log.run_id, log.path, status, error, document, final, checks, unclaimed)
+    return Outcome(log.run_id, log.path, status, error, document, final, checks, unclaimed, first)

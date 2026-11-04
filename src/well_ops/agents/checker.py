@@ -25,7 +25,7 @@ from __future__ import annotations
 import datetime as dt
 import re
 from collections import Counter
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Self
@@ -786,9 +786,10 @@ def fetch(cur: duckdb.DuckDBPyConnection, eid: evidence.EvidenceId) -> Row | Non
 NUMBER = re.compile(r"(?<![\w/.,-])(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(?![\w/-]|[.,]\d)")
 ISO_DATE_TEXT = re.compile(r"(?<![\w-])(\d{4}-\d{2}-\d{2})(?![\w-])")
 MONTH_TEXT = re.compile(r"(?<![\w-])(\d{4}-\d{2})(?![\w-])")
-# Identifiers: section numbers ("section 2", "sections 1, 2 and 4") and evidence ids in backticks.
+# Identifiers: section and campaign numbers ("section 2", "sections 1, 2 and 4", "campaign 1"),
+# NPDIDs and evidence ids in backticks.
 IDENTIFIERS = re.compile(
-    r"`[^`]*`|\b[Ss]ections?\s+\d+(?:\s*(?:,|and|or|to|-|\u2013)\s*\d+)*"
+    r"`[^`]*`|\b(?:[Ss]ections?|[Cc]ampaigns?)\s+\d+(?:\s*(?:,|and|or|to|-|\u2013)\s*\d+)*"
     r"|\b(?:[Ss]odir wellbore|NPDID)\s+\d+"
 )
 YEAR = re.compile(r"(?:19|20)\d{2}")
@@ -825,6 +826,20 @@ def _in_quote(written: str, quotes: Sequence[str]) -> bool:
     return any(pattern.search(q) for q in quotes)
 
 
+def written_numbers(text: str) -> Iterator[tuple[str, str]]:
+    """Every number and date in a sentence's text that is not an identifier, as written, with
+    its kind: `date` (yyyy-mm-dd), `month` (yyyy-mm) or `number`."""
+    text = IDENTIFIERS.sub(" ", text)
+    for match in ISO_DATE_TEXT.finditer(text):
+        yield "date", match.group(1)
+    text = ISO_DATE_TEXT.sub(" ", text)
+    for match in MONTH_TEXT.finditer(text):
+        yield "month", match.group(1)
+    text = MONTH_TEXT.sub(" ", text)
+    for match in NUMBER.finditer(text):
+        yield "number", match.group(1)
+
+
 def unclaimed_numbers(document: Document) -> list[UnclaimedNumber]:
     """Every number and date in sentence text that is not an identifier and that no claim of
     the same sentence states (ADR 0004: every quantity in a sentence is a claim). A number is
@@ -833,7 +848,6 @@ def unclaimed_numbers(document: Document) -> list[UnclaimedNumber]:
     found = []
     for i, section in enumerate(document.sections):
         for j, sentence in enumerate(section.sentences):
-            text = IDENTIFIERS.sub(" ", sentence.text)
             values = [c.value for c in sentence.claims]
             dates = {str(c.value) for c in sentence.claims if c.type is ClaimType.DATE}
             quotes = [str(c.value) for c in sentence.claims if c.type is ClaimType.QUOTE]
@@ -843,21 +857,22 @@ def unclaimed_numbers(document: Document) -> list[UnclaimedNumber]:
                 for k, v in c.what.scope.items()
                 if k in ("month", "start", "end")
             }
-            for match in ISO_DATE_TEXT.finditer(text):
-                if match.group(1) not in dates:
-                    found.append(UnclaimedNumber(i, j, match.group(1)))
-            text = ISO_DATE_TEXT.sub(" ", text)
-            for match in MONTH_TEXT.finditer(text):
-                if match.group(1) not in months:
-                    found.append(UnclaimedNumber(i, j, match.group(1)))
-            text = MONTH_TEXT.sub(" ", text)
-            for match in NUMBER.finditer(text):
-                written = match.group(1)
-                if any(_covers(written, v) for v in values) or _in_quote(written, quotes):
-                    continue
-                if YEAR.fullmatch(written) and any(d.startswith(written + "-") for d in dates):
-                    continue
-                found.append(UnclaimedNumber(i, j, written))
+            for kind, written in written_numbers(sentence.text):
+                if kind == "date":
+                    covered = written in dates
+                elif kind == "month":
+                    covered = written in months
+                else:
+                    covered = (
+                        any(_covers(written, v) for v in values)
+                        or _in_quote(written, quotes)
+                        or bool(
+                            YEAR.fullmatch(written)
+                            and any(d.startswith(written + "-") for d in dates)
+                        )
+                    )
+                if not covered:
+                    found.append(UnclaimedNumber(i, j, written))
     return found
 
 

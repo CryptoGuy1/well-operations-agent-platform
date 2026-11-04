@@ -13,9 +13,10 @@ from typing import Any
 import pytest
 from anthropic.types import Message
 
-from well_ops.agents.audit_log import read_events
+from well_ops.agents.audit_log import read_events, replay
 from well_ops.agents.checker import METRICS, Checker, Verdict
 from well_ops.agents.post_well_review.agent import AGENT, PROMPT_VERSION, prompt_path, review
+from well_ops.agents.revision import removed_in_revision
 from well_ops.agents.runtime import Outcome, Toolbox, stdio_servers
 from well_ops.connectors.base import READ_ONLY, ConnectorServer
 from well_ops.settings import Settings
@@ -190,6 +191,22 @@ def test_unclaimed_numbers_and_unsupported_claims_trigger_the_revision(
     assert [c["unclaimed_number"] for c in outcome.checks] == [1, 0]
     _, findings = last_user_blocks(model.requests[1])
     assert "unclaimed number '7' in section 1, sentence 2" in findings["text"]
+    assert "a date with an activity_date claim" in findings["text"]
+    assert "with a quote claim" in findings["text"]
+    assert "Remove a number only if no tool row supports it" in findings["text"]
+
+
+def test_what_the_revision_removed_is_reported(settings: Settings, checker: Checker) -> None:
+    loose = document(12.25)
+    loose["sections"][0]["sentences"].append({"text": "It took 7 days."})
+    model = ScriptedModel(message(1, use("submit_review", loose)), message(2, submit(12.25, 1)))
+    outcome = run(settings, model, checker)
+
+    assert outcome.first_document is not None and outcome.document is not None
+    removed = removed_in_revision(outcome.first_document, outcome.document)
+    assert removed.claims == [] and removed.numbers == ["7"]
+    replayed = replay(outcome.log_path)
+    assert "### Removed during revision" in replayed and "Numbers: `7`" in replayed
 
 
 def test_an_invalid_document_goes_back_as_a_tool_error(

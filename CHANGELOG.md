@@ -87,6 +87,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   first draft stays the scored one.
 - `prompts/post_well_review/v3.md` (v1 and v2 unchanged): campaigns, quote-backed casing sizes
   and exact evidence scoping. The agent uses v3.
+- Run reports (`make review`, `make replay`) list what was removed during revision: the
+  first-draft claims and numbers the final draft does not have (`well_ops.agents.revision`).
+- `prompts/post_well_review/CHANGELOG.md`: prompt versions and their status.
+- Checker: campaign numbers ("campaign 1") are identifiers, not unclaimed numbers.
+- The revision findings ask the agent to back an unclaimed number with a claim (a date with
+  `activity_date`, report text with a quote) and to remove it only if no tool row supports it.
 
 ### Removed
 

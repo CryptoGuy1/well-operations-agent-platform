@@ -3,9 +3,10 @@
     uv run python scripts/review.py --wellbore "15/9-F-11 T2"
 
 Writes the run log to `<runs_dir>/<run_id>.jsonl` and the checked review, each claim marked with
-its check result, to `<runs_dir>/<run_id>.review.md`; prints their paths, the check summaries and
-the run's cost. Resolves the wellbore and applies the held-out guard before any model call, and
-refuses to run in evaluation mode, which only the evaluation harness sets.
+its check result, to `<runs_dir>/<run_id>.review.md`; prints their paths, the check summaries,
+what the revision removed from the first draft and the run's cost. Resolves the wellbore and
+applies the held-out guard before any model call, and refuses to run in evaluation mode, which
+only the evaluation harness sets.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from well_ops.agents.audit_log import Run, canonical_json, code_version
 from well_ops.agents.checker import Checker, summary
 from well_ops.agents.post_well_review.agent import review
 from well_ops.agents.render import render_document
+from well_ops.agents.revision import Removed, removed_in_revision, removed_lines
 from well_ops.agents.runtime import MessagesApiModel, Outcome, stdio_servers
 from well_ops.connectors.base import connect, resolve_wellbore
 from well_ops.connectors.errors import ToolError
@@ -49,6 +51,14 @@ def run_section(outcome: Outcome, end: dict[str, object]) -> str:
             "",
         ]
     )
+
+
+def removed(outcome: Outcome) -> Removed | None:
+    """What the revision removed, when the run has a revised final draft."""
+    first, final = outcome.first_document, outcome.document
+    if first is None or final is None or len(outcome.checks) < 2:
+        return None
+    return removed_in_revision(first, final)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -96,12 +106,21 @@ def main(argv: list[str] | None = None) -> int:
     if outcome.document is not None and outcome.results is not None:
         out = outcome.log_path.with_suffix(".review.md")
         text = render_document(outcome.document, outcome.results, outcome.unclaimed)
+        gone = removed(outcome)
+        if gone is not None:
+            text += "\n" + "\n".join(removed_lines(gone)) + "\n"
         text += run_section(outcome, end)
         out.write_text(text, encoding="utf-8")
         print(f"review: {out}")
         print("final check: " + ", ".join(f"{n} {v}" for v, n in summary(outcome.results).items()))
     for n, counts in enumerate(outcome.checks, 1):
         print(f"check {n}: " + ", ".join(f"{c} {v}" for v, c in counts.items()))
+    gone = removed(outcome)
+    if gone is not None:
+        print(
+            f"removed during revision: {len(gone.claims)} claims, {len(gone.numbers)} numbers"
+            + (f" ({', '.join(gone.numbers)})" if gone.numbers else "")
+        )
     print(f"status: {outcome.status}" + (f" ({outcome.error})" if outcome.error else ""))
     cost = end.get("cost_usd")
     print(

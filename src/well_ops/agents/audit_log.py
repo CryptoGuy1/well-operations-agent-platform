@@ -43,6 +43,7 @@ import duckdb
 
 from well_ops.agents.checker import Checker, ClaimResult, UnclaimedNumber, summary
 from well_ops.agents.render import render_document
+from well_ops.agents.revision import removed_in_revision, removed_lines
 from well_ops.agents.schema import Document
 from well_ops.settings import Settings
 
@@ -408,6 +409,12 @@ class Run:
         return None if draft is None else Document.model_validate(draft["document"])
 
     @property
+    def first_document(self) -> Document | None:
+        """The first draft, the scored one (evaluation/RULES.md)."""
+        drafts = self.of_type("draft")
+        return Document.model_validate(drafts[0]["document"]) if drafts else None
+
+    @property
     def results(self) -> list[ClaimResult] | None:
         check = self.last("check")
         return None if check is None else [ClaimResult.from_dict(r) for r in check["results"]]
@@ -593,6 +600,9 @@ def replay(path: Path, checker: Checker | None = None) -> str:
         lines.append("The draft was not checked, so it is not rendered (ADR 0004).")
     else:
         rendered = render_document(document, results, run.unclaimed).rstrip().splitlines()
+        first = run.first_document
+        if first is not None and len(run.of_type("draft")) > 1:
+            rendered += ["", *removed_lines(removed_in_revision(first, document))]
         lines += ["#" + line if line.startswith("#") else line for line in rendered]
         if checker is not None:
             lines += ["", *_recheck(document, results, checker)]
