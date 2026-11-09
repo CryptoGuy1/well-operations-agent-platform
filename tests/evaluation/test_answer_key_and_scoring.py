@@ -62,6 +62,17 @@ def test_the_key_file_round_trips(warehouse: Path, checker: Checker, tmp_path: P
     sha256 = answer_key.write([key], path)
     assert len(sha256) == 64 and answer_key.read(path) == [key]
     assert answer_key.dumps(answer_key.read(path)) == path.read_text(encoding="utf-8")
+    assert answer_key.sha256([key]) == sha256
+
+
+def test_the_hash_record_round_trips(tmp_path: Path) -> None:
+    record = answer_key.KeyHash("ab" * 32, "0123abc")
+    path = tmp_path / "key.sha256"
+    path.write_text(record.dumps("key.jsonl"), encoding="utf-8")
+    assert path.read_text(encoding="utf-8").splitlines()[0] == f"{'ab' * 32}  key.jsonl"
+    assert answer_key.KeyHash.read(path) == record
+    path.write_text(answer_key.KeyHash("cd" * 32, None).dumps("key.jsonl"), encoding="utf-8")
+    assert answer_key.KeyHash.read(path).built_from is None
 
 
 def claim(n: int, metric: str, value: Any, **what: Any) -> Claim:

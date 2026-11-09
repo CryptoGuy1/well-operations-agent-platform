@@ -17,7 +17,8 @@ alike. The facts of a wellbore are:
 
 A fact whose value is unknown (null in the warehouse) or zero is left out of the key and
 counted. The key covers every wellbore of the evaluation population, held-out ones included, so
-it is written to a local file and never printed.
+it is written to a local file and never printed. Its SHA-256 and the commit it was built from
+are committed in `answer_key.sha256`, so a release can prove which key it scored against.
 """
 
 from __future__ import annotations
@@ -168,12 +169,34 @@ def dumps(keys: Sequence[WellboreKey]) -> str:
     return "".join(json.dumps(k.as_dict(), sort_keys=True, ensure_ascii=False) + "\n" for k in keys)
 
 
+def sha256(keys: Sequence[WellboreKey]) -> str:
+    """SHA-256 of the key file these keys are written to."""
+    return hashlib.sha256(dumps(keys).encode("utf-8")).hexdigest()
+
+
 def write(keys: Sequence[WellboreKey], path: Path) -> str:
     """Writes the key file and returns its SHA-256."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    text = dumps(keys)
-    path.write_text(text, encoding="utf-8")
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    path.write_text(dumps(keys), encoding="utf-8")
+    return sha256(keys)
+
+
+@dataclass(frozen=True)
+class KeyHash:
+    """The committed record of a key file: its SHA-256 and the commit it was built from."""
+
+    sha256: str
+    built_from: str | None
+
+    def dumps(self, file_name: str) -> str:
+        return f"{self.sha256}  {file_name}\nbuilt from commit {self.built_from or 'unknown'}\n"
+
+    @classmethod
+    def read(cls, path: Path) -> KeyHash:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        digest = lines[0].split()[0]
+        built = lines[1].removeprefix("built from commit ").strip() if len(lines) > 1 else ""
+        return cls(digest, None if built in ("", "unknown") else built)
 
 
 def read(path: Path) -> list[WellboreKey]:

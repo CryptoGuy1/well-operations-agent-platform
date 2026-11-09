@@ -7,7 +7,8 @@
 A release runs the primary system, the baseline and, if the budget allows, the secondary model on
 the held-out wellbores in evaluation mode, and writes `evaluation/results/<release>/`: one JSON
 file per run and `summary.md`. It refuses settings that differ from the frozen configuration, a
-working tree with uncommitted changes, a stale answer key and a release that already has results.
+working tree with uncommitted changes, an answer key whose rebuilt SHA-256 differs from the
+committed `evaluation/answers/answer_key.sha256`, and a release that already has results.
 Only counts are printed: results name held-out wellbores.
 
 A dry run uses a stub model (no provider calls) on development wellbores only, outside evaluation
@@ -36,6 +37,7 @@ from well_ops.settings import SecondarySettings, Settings
 
 REPO = Path(__file__).resolve().parents[1]
 KEY_PATH = Path("evaluation/answers/answer_key.jsonl")
+HASH_PATH = Path("evaluation/answers/answer_key.sha256")
 RULES_PATH = Path("evaluation/RULES.md")
 RESULTS_DIR = Path("evaluation/results")
 
@@ -72,10 +74,14 @@ def main(argv: list[str] | None = None) -> int:
         return fail(f"{out_dir} exists; every release is run once")
     runs_dir = out_dir / "logs" if args.dry_run else base.runs_dir / "evaluation" / args.release
 
-    # The answer key file must match the warehouse.
-    if not KEY_PATH.exists():
-        return fail(f"{KEY_PATH} is missing; run make answer-key")
+    # The answer key: the local file must have the committed hash, and the key rebuilt from the
+    # warehouse must have it too (a dry run, outside evaluation mode, rebuilds its wellbores only).
+    if not KEY_PATH.exists() or not HASH_PATH.exists():
+        return fail(f"{KEY_PATH} or {HASH_PATH} is missing; run make answer-key")
+    committed = answer_key.KeyHash.read(HASH_PATH)
     keys = answer_key.read(KEY_PATH)
+    if sha256_file(KEY_PATH) != committed.sha256:
+        return fail(f"{KEY_PATH} does not have the SHA-256 in {HASH_PATH}")
     split = "development" if args.dry_run else "held_out"
     key_settings = base.model_copy(update={"evaluation_mode": not args.dry_run})
     checker = Checker.from_settings(key_settings)
@@ -85,14 +91,17 @@ def main(argv: list[str] | None = None) -> int:
         scored = [k for w in wanted for k in keys if k.wellbore_key == w and k.split == split]
         if len(scored) != len(args.wellbores):
             return fail("a dry run takes development wellbores of the answer key only")
+        now = answer_key.compute(
+            con, checker, [(k.wellbore_key, k.wellbore_name, k.split) for k in scored]
+        )
+        stale = answer_key.dumps(now) != answer_key.dumps(scored)
     else:
         scored = [k for k in keys if k.split == split]
-    now = answer_key.compute(
-        con, checker, [(k.wellbore_key, k.wellbore_name, k.split) for k in scored]
-    )
+        rebuilt = answer_key.compute(con, checker, answer_key.population(base.splits_path))
+        stale = answer_key.sha256(rebuilt) != committed.sha256
     con.close()
-    if answer_key.dumps(now) != answer_key.dumps(scored):
-        return fail(f"{KEY_PATH} does not match the warehouse; run make answer-key")
+    if stale:
+        return fail(f"the rebuilt answer key does not have the SHA-256 in {HASH_PATH}")
 
     # The systems.
     def system_settings(settings: Settings, name: str) -> Settings:
@@ -177,8 +186,9 @@ def main(argv: list[str] | None = None) -> int:
         title = f"DRY RUN with a stub model, not a result: {title}"
     setup = [
         f"- Date: {dt.datetime.now(dt.UTC).date().isoformat()}; code version: `{version}`",
-        f"- Rules: `{RULES_PATH}` (SHA-256 `{sha256_file(RULES_PATH)[:12]}`); answer key "
-        f"SHA-256 `{sha256_file(KEY_PATH)[:12]}`",
+        f"- Rules: `{RULES_PATH}` (SHA-256 `{sha256_file(RULES_PATH)[:12]}`)",
+        f"- Answer key: SHA-256 `{committed.sha256}`, built from commit "
+        f"`{committed.built_from or 'unknown'}` (`{HASH_PATH}`)",
         f"- Scored wellbores: {len(scored)} ({split})",
         *(
             f"- {s.name}: model `{s.settings.model}`, prompt `{s.prompt_path}` (SHA-256 "

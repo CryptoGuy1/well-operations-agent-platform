@@ -102,6 +102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value only, an optional secondary model (`claude-sonnet-5-5`, one run per wellbore), failure
   and rerun rules, and a USD 8 release budget. `evaluation/CHANGELOG.md` records changes after
   the first scored run.
+- `evaluation/answers/answer_key.sha256`: the committed SHA-256 of the local answer key and the
+  commit it was built from; the harness refuses a rebuilt key with another hash and gives the
+  hash in every summary.
 - `well_ops.evaluation`: the answer key (`make answer-key`; local file, counts printed only),
   scoring, the budget guard, the harness (`make evaluate RELEASE=r<n>`) with per-run JSON and
   `summary.md`, and a stub model for dry runs on development wellbores.

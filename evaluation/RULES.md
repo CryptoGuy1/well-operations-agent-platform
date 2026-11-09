@@ -202,9 +202,11 @@ full check. The primary system's first draft is also reported value-only, for co
 
 The answer key (`well_ops.evaluation.answer_key`, `make answer-key`) is computed from the
 warehouse by code, with the checker's own metric code, for every wellbore of the evaluation
-population. It holds held-out facts: it is kept out of the repository and never printed; the
-harness recomputes it and refuses a stale file, and every summary gives its SHA-256. Per
-wellbore, the key facts are:
+population. It holds held-out facts: the key file is kept out of the repository and never
+printed. Its SHA-256 and the commit it was built from are committed in
+`evaluation/answers/answer_key.sha256`. The harness rebuilds the key from the warehouse and
+refuses to run if the rebuilt key's SHA-256 differs from the committed one, and every summary
+gives that SHA-256 and commit. Per wellbore, the key facts are:
 
 | Fact | Metric and scope |
 |---|---|
