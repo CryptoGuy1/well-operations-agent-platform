@@ -5,9 +5,9 @@ An agent run sends its versioned prompt as the system prompt, the task as the fi
 and every connector tool plus `submit_review`, through which the agent hands in its document.
 Tool calls go to the MCP servers; a submitted document is validated against the output contract
 (validation errors go back to the model as a tool error) and then checked by the claim checker.
-If any claim is contradicted or unsupported, or any number is unclaimed, the agent gets one
-revision turn with the checker's findings: claim ids, results and reasons, never the recomputed
-values, so a fix has to come from the tools. The first draft is the scored one
+If any claim is contradicted or unsupported, or any number is unclaimed, the agent (not a
+baseline) gets one revision turn with the checker's findings: claim ids, results and reasons,
+never the recomputed values, so a fix has to come from the tools. The first draft is the scored one
 (evaluation/RULES.md); the last checked document is the final draft, with every remaining failure
 shown.
 
@@ -60,12 +60,15 @@ SUBMIT_TOOL: dict[str, Any] = {
 }
 
 
-def stdio_servers(repo: Path) -> dict[str, StdioServerParameters]:
+def stdio_servers(repo: Path, *, evaluation_mode: bool = False) -> dict[str, StdioServerParameters]:
     """Each connector server as a subprocess of this interpreter. The subprocess gets only the
-    WELL_OPS_* settings and the variables a Python process needs, not the provider API key."""
+    WELL_OPS_* settings and the variables a Python process needs, not the provider API key.
+    Evaluation mode, set only by the evaluation harness, lets the servers serve held-out
+    wellbores."""
     env = {
         k: v for k, v in os.environ.items() if k.startswith("WELL_OPS_") or k in ("PATH", "HOME")
     }
+    env["WELL_OPS_EVALUATION_MODE"] = "true" if evaluation_mode else "false"
     return {
         name: StdioServerParameters(
             command=sys.executable, args=["-m", module], env=env, cwd=str(repo)
@@ -121,6 +124,10 @@ class ModelClient(Protocol):
     async def create(self, params: Mapping[str, Any]) -> Message: ...
 
 
+class TokenCounter(Protocol):
+    async def count_tokens(self, params: Mapping[str, Any]) -> int: ...
+
+
 class MessagesApiModel:
     """The provider's Messages API, streamed so long responses do not time out."""
 
@@ -130,6 +137,16 @@ class MessagesApiModel:
     async def create(self, params: Mapping[str, Any]) -> Message:
         async with self._client.messages.stream(**params) as stream:
             return await stream.get_final_message()
+
+    async def count_tokens(self, params: Mapping[str, Any]) -> int:
+        """Prompt tokens of a request (model, system, tools and messages)."""
+        counted = await self._client.messages.count_tokens(
+            model=params["model"],
+            system=params["system"],
+            tools=params["tools"],
+            messages=params["messages"],
+        )
+        return counted.input_tokens
 
 
 @dataclass
@@ -196,6 +213,7 @@ async def run_agent(
     toolbox: Toolbox,
     checker: Checker,
     log: RunLog,
+    revise: bool = True,
 ) -> Outcome:
     model_id = settings.require_model()
     system = prompt_path.read_text(encoding="utf-8")
@@ -297,7 +315,7 @@ async def run_agent(
                 {str(v): sum(r.verdict is v for r in check) for v in Verdict}
                 | {"unclaimed_number": len(unclaimed)}
             )
-            if not revised and (unclaimed or any(r.verdict in REVISE for r in check)):
+            if revise and not revised and (unclaimed or any(r.verdict in REVISE for r in check)):
                 revised = True
                 results.append({"type": "text", "text": _findings(check, unclaimed)})
                 messages.append({"role": "user", "content": results})

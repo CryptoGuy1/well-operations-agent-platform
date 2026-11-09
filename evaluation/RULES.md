@@ -1,9 +1,25 @@
 # Evaluation rules
 
-Status: **draft**. These rules are frozen, with the tag `v0.3.0-rules`, before any scored run.
-After the freeze, every change is dated and disclosed in `evaluation/CHANGELOG.md`.
+Status: **frozen** with the tag `v0.3.0-rules` (2026-11-09), before any scored run. Any change
+after the first scored run needs an entry in `evaluation/CHANGELOG.md` and a new release number.
 
-This draft covers claim checking (ADR 0004). Scoring is added before the freeze.
+These rules cover what is evaluated, how claims are checked, the answer key, the metrics, the
+baseline, the secondary model, failures and the budget. The harness (`well_ops.evaluation`,
+`make evaluate RELEASE=r<n>`) implements them and refuses settings that differ.
+
+## Evaluated system and scored set
+
+- **Primary system**: the post-well review agent with prompt
+  `prompts/post_well_review/v3.md`, model `claude-haiku-5-5` at default effort (no effort
+  sent), `max_tokens` 64000, `max_steps` 20 and `tool_row_cap` 200, on a committed code
+  version (a working tree with changes is refused).
+- **Scored set**: the 5 held-out wellbores of `evaluation/splits.json`, only. Development
+  wellbores are never scored, and nothing is tuned on held-out wellbores.
+- **Runs**: 3 runs per wellbore and system, run 1 on every wellbore before run 2. Each run is
+  one full review of one wellbore; it is scored on its own claims, with no separate targeted
+  questions.
+- The first draft is scored. The final draft is reported separately as "after checker
+  feedback" (see Scored draft).
 
 ## Claims
 
@@ -78,8 +94,7 @@ that states it. Identifiers are not numbers: digits inside wellbore names and co
 (`15/9-F-11 T2`), section numbers ("section 2", "sections 1, 2 and 4"), campaign numbers
 ("campaign 1", "campaigns 2 and 3"), NPDIDs ("Sodir wellbore 5794", "NPDID 5794") and evidence
 ids in backticks. Every other number is flagged as
-`unclaimed_number`. Unclaimed numbers are counted in scored results alongside unsupported claims:
-the unsupported rate is (unsupported claims + unclaimed numbers) / (claims + unclaimed numbers).
+`unclaimed_number`. Unclaimed numbers are reported as their own rate (see Metrics reported).
 
 ## Real-time curve statistics
 
@@ -95,7 +110,9 @@ claim.
 
 ## Metrics
 
-Scope keys in brackets are optional. `section` is the hole-section number, `campaign` the
+Scope keys in brackets are optional. `section` is the hole-section number (section 0 holds the
+activities before the first stated hole section; its evidence id ends in
+`#before_first_section`), `campaign` the
 campaign number (a gap of more than 30 days between reports starts a new campaign), `tier` is `primary`
 or `possible`, `code` is `category -- subcategory`, months are `yyyy-mm`, and a volume metric
 takes either `month` or `start` and `end` (inclusive).
@@ -168,12 +185,105 @@ and dates of the first draft's text, as written and identifiers excluded, that t
 draft's text does not have (counted over the whole document). This is reported, not scored;
 first-draft scoring is unchanged.
 
-## Reporting results
+A claim whose value changed in revision counts as removed (its first-draft value is gone).
 
-Every scored result reports claim accuracy together with the unsupported rate and the
-unverifiable rate; accuracy is never reported alone. The unverifiable rate is the share of all
-claims that are unverifiable; the unsupported rate counts unclaimed numbers as above. Claim accuracy is defined with the scoring rules,
-before the freeze.
+A run with no checked first draft (the step budget ran out, the output never fitted the
+contract, or the model refused) is a task failure (see Failures).
+
+## Value-only checking
+
+The baseline is checked on values only: the evidence requirement is waived. A claim's metric is
+recomputed from its scope, and its value compared with the same tolerances; its cited evidence
+ids, if any, are ignored. Metrics defined by the cited rows (`activity_duration`,
+`activity_date`, `activity_code` and `quote`) cannot be recomputed without evidence and keep the
+full check. The primary system's first draft is also reported value-only, for comparison.
+
+## Answer key
+
+The answer key (`well_ops.evaluation.answer_key`, `make answer-key`) is computed from the
+warehouse by code, with the checker's own metric code, for every wellbore of the evaluation
+population. It holds held-out facts: it is kept out of the repository and never printed; the
+harness recomputes it and refuses a stale file, and every summary gives its SHA-256. Per
+wellbore, the key facts are:
+
+| Fact | Metric and scope |
+|---|---|
+| Report date range | `first_report_date`, `last_report_date` |
+| Campaign count and dates | `campaign_count`; `campaign_start_date`, `campaign_end_date` per campaign |
+| Section count | the number of hole sections (see below) |
+| Per hole section: depth range, hole size, new hole, drilling rate | `section_start_md`, `section_end_md`, `section_hole_size`, `new_hole_drilled`, `section_drilling_rate` |
+| Per hole section: primary and possible lost hours | `lost_hours` with `tier` and `section` |
+| Largest primary cause and its hours | `lost_hours` with `tier` primary and the `code` with the most primary hours (ties: the first code alphabetically) |
+| Total primary and possible lost hours | `lost_hours` with `tier` only |
+
+Section 0 (activities before the first stated hole section) is not a hole section: it gives no
+facts and is not counted. A fact whose value is unknown (null in the warehouse) or zero is left
+out of the key; both are counted in the key file.
+
+A key fact is **covered** by a verified claim of the same metric and scope (the claim's
+wellbore resolved to its key), **wrong** when such a claim is contradicted and none is verified,
+and **missing** otherwise. The section count has no metric in prompt v3: it is covered when
+every hole section has a verified claim scoped to it and no claim names a section the wellbore
+does not have, and wrong when a claim names such a section. Answer-key coverage is covered key
+facts / key facts.
+
+## Metrics reported
+
+Every scored result reports all of these together; claim accuracy is never reported alone.
+
+| Metric | Definition |
+|---|---|
+| Claim accuracy | verified / (verified + contradicted) |
+| Unsupported rate | unsupported claims / claims |
+| Unverifiable rate | unverifiable claims / claims |
+| Unclaimed-number rate | unclaimed numbers / (claims + unclaimed numbers) |
+| Answer-key coverage | covered key facts / key facts, with the count of wrong key facts |
+| Removed during revision | claims and numbers of the first draft absent from the final draft |
+| Cost and latency | USD from the logged tokens and the configured prices; elapsed seconds per run |
+
+Each metric is reported per wellbore as the mean and the minimum to maximum over its 3 runs,
+and over all runs of the system. A metric a run cannot define (accuracy with no verified or
+contradicted claim, for example) is left out of that mean, and the number of runs behind the
+value is shown. A task failure counts as zero answer-key coverage.
+
+## Baseline
+
+The baseline is the same model with no data tools, given only the wellbore name and the output
+contract (`prompts/post_well_review_baseline/v1.md`); it hands in its document through
+`submit_review`, the only tool it has, and gets no revision turn. It is scored on value only
+(see Value-only checking), with the same answer key, 3 runs per held-out wellbore.
+
+## Secondary model
+
+If the primary system and the baseline finish within the budget, the primary system is run once
+per held-out wellbore with `claude-sonnet-5-5` (same prompt and settings; its prices are the
+`WELL_OPS_SECONDARY_*` settings). It is reported separately and never pooled with the primary
+results.
+
+## Failures
+
+- **Infrastructure errors** (provider credit, network, rate limit, provider 5xx) may be rerun,
+  at most twice per run; every attempt has its own run log and is listed in the summary.
+- **Agent failures** (the step budget runs out, the output never fits the contract, or the model
+  refuses) without a checked first draft are task failures: counted, never rerun.
+- Any other error stops the harness.
+
+## Budget
+
+The release has a hard cap of USD 8 for every model call of the primary system, the baseline
+and the secondary model, earlier attempts of the same release included. Before each call the
+harness counts the request's prompt tokens and bounds its cost (the prompt plus 10 % at the
+highest input-side price of either price tier, plus the whole `max_tokens` at the highest
+output price); if the spend so far plus that bound would exceed the cap, the call is not made,
+the release stops and the summary reports what ran. Prices must be set; otherwise the release is
+refused.
+
+## Releases
+
+A release (`r1`, `r2`, ...) is run once and writes `evaluation/results/<release>/`: one JSON file
+per run and `summary.md`. Any change after the first scored run, to these rules, the prompts,
+the settings, the answer key or the code that scores, needs an entry in
+`evaluation/CHANGELOG.md` and a new release number.
 
 ## Held-out wellbores
 

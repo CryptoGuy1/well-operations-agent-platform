@@ -96,6 +96,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is above the threshold is priced at the upper tier; cost stays per model call.
 - The revision findings ask the agent to back an unclaimed number with a claim (a date with
   `activity_date`, report text with a quote) and to remove it only if no tool row supports it.
+- Evaluation rules frozen (`evaluation/RULES.md`): primary system (prompt v3,
+  `claude-haiku-5-5`, default effort), the 5 held-out wellbores, 3 runs per wellbore, first
+  draft scored, metrics reported together, answer-key coverage, a no-tools baseline scored on
+  value only, an optional secondary model (`claude-sonnet-5-5`, one run per wellbore), failure
+  and rerun rules, and a USD 8 release budget. `evaluation/CHANGELOG.md` records changes after
+  the first scored run.
+- `well_ops.evaluation`: the answer key (`make answer-key`; local file, counts printed only),
+  scoring, the budget guard, the harness (`make evaluate RELEASE=r<n>`) with per-run JSON and
+  `summary.md`, and a stub model for dry runs on development wellbores.
+- `prompts/post_well_review_baseline/v1.md`: the baseline prompt (wellbore name and output
+  contract only).
+- Checker: value-only checking for the baseline, and `compute` for the answer key. Settings:
+  `WELL_OPS_SECONDARY_MODEL` and the `WELL_OPS_SECONDARY_PRICE_*` prices.
 
 ### Removed
 
@@ -108,6 +121,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The unsupported rate is unsupported claims / claims; unclaimed numbers have their own rate
+  (`evaluation/RULES.md`).
+
 - Lost-time tiers (ADR 0002 D7 amendment of 2026-11-04, after the lost-time review):
   `interruption -- wait` moves from primary to possible; `interruption -- rig up/down` and
   `drilling -- wait` move from possible to primary. The `lost_time_codes` seed matches.
@@ -118,6 +134,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `int_production__daily_flag`, `int_production__daily_units_check` and the production tools are
   keyed by the attributed wellbore and carry `published_npdid`; evidence ids still cite the
   published NPDID.
+
+### Fixed
+
+- Checker: a claim scoped to section 0 (activities before the first stated hole section) is
+  recomputed from that section (`#before_first_section`) instead of being unsupported.
 
 ## [0.2.0-platform] - 2026-10-30
 

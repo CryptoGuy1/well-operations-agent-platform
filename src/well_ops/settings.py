@@ -63,35 +63,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _prices_together(self) -> Self:
-        prices = (
-            self.price_input_per_mtok_usd,
-            self.price_output_per_mtok_usd,
-            self.price_checked_on,
-        )
-        if any(p is not None for p in prices) and any(p is None for p in prices):
-            raise ValueError(
-                "set WELL_OPS_PRICE_INPUT_PER_MTOK_USD, WELL_OPS_PRICE_OUTPUT_PER_MTOK_USD and "
-                "WELL_OPS_PRICE_CHECKED_ON together, or none of them"
-            )
-        cache = (self.price_cache_write_per_mtok_usd, self.price_cache_read_per_mtok_usd)
-        if any(p is not None for p in cache) and prices[0] is None:
-            raise ValueError("cache prices need the input and output prices")
-        above = (
-            self.price_above_input_per_mtok_usd,
-            self.price_above_output_per_mtok_usd,
-            self.price_above_cache_write_per_mtok_usd,
-            self.price_above_cache_read_per_mtok_usd,
-        )
-        if self.price_tier_threshold_tokens is not None and (
-            prices[0] is None or above[0] is None or above[1] is None
-        ):
-            raise ValueError(
-                "WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS needs the input and output prices and "
-                "WELL_OPS_PRICE_ABOVE_INPUT_PER_MTOK_USD and "
-                "WELL_OPS_PRICE_ABOVE_OUTPUT_PER_MTOK_USD"
-            )
-        if any(p is not None for p in above) and self.price_tier_threshold_tokens is None:
-            raise ValueError("above-threshold prices need WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS")
+        check_prices(self)
         return self
 
     def require_model(self) -> str:
@@ -99,3 +71,67 @@ class Settings(BaseSettings):
         if not self.model:
             raise ValueError("no model configured; set WELL_OPS_MODEL")
         return self.model
+
+
+def check_prices(settings: Settings) -> None:
+    """Prices are set together: input, output and checked-on date; cache prices only with them;
+    a price tier only with its threshold and its input and output prices."""
+    prices = (
+        settings.price_input_per_mtok_usd,
+        settings.price_output_per_mtok_usd,
+        settings.price_checked_on,
+    )
+    if any(p is not None for p in prices) and any(p is None for p in prices):
+        raise ValueError(
+            "set WELL_OPS_PRICE_INPUT_PER_MTOK_USD, WELL_OPS_PRICE_OUTPUT_PER_MTOK_USD and "
+            "WELL_OPS_PRICE_CHECKED_ON together, or none of them"
+        )
+    cache = (settings.price_cache_write_per_mtok_usd, settings.price_cache_read_per_mtok_usd)
+    if any(p is not None for p in cache) and prices[0] is None:
+        raise ValueError("cache prices need the input and output prices")
+    above = (
+        settings.price_above_input_per_mtok_usd,
+        settings.price_above_output_per_mtok_usd,
+        settings.price_above_cache_write_per_mtok_usd,
+        settings.price_above_cache_read_per_mtok_usd,
+    )
+    if settings.price_tier_threshold_tokens is not None and (
+        prices[0] is None or above[0] is None or above[1] is None
+    ):
+        raise ValueError(
+            "WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS needs the input and output prices and "
+            "WELL_OPS_PRICE_ABOVE_INPUT_PER_MTOK_USD and "
+            "WELL_OPS_PRICE_ABOVE_OUTPUT_PER_MTOK_USD"
+        )
+    if any(p is not None for p in above) and settings.price_tier_threshold_tokens is None:
+        raise ValueError("above-threshold prices need WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS")
+
+
+class SecondarySettings(BaseSettings):
+    """The secondary model of an evaluation release and its prices (`WELL_OPS_SECONDARY_*`,
+    evaluation/RULES.md). Every other setting is the primary system's."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="WELL_OPS_SECONDARY_", env_file=".env", extra="ignore"
+    )
+
+    model: str | None = None
+    price_input_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_output_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_checked_on: dt.date | None = None
+    price_cache_write_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_cache_read_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_tier_threshold_tokens: int | None = Field(default=None, ge=1)
+    price_above_input_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_above_output_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_above_cache_write_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_above_cache_read_per_mtok_usd: float | None = Field(default=None, ge=0)
+
+    def apply(self, settings: Settings) -> Settings | None:
+        """The primary settings with this model and these prices, validated as settings are;
+        None when no secondary model is set."""
+        if self.model is None:
+            return None
+        updated = settings.model_copy(update=self.model_dump())
+        check_prices(updated)
+        return updated

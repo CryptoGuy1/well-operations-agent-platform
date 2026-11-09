@@ -1,6 +1,6 @@
 .PHONY: setup lint test download download-volve audit stage extract-log dbt-build \
 	dbt-compile rebuild quality serve-ddr \
-	serve-prod serve-sodir serve-rt runs-db replay review
+	serve-prod serve-sodir serve-rt runs-db replay review answer-key evaluate
 
 setup:
 	uv sync
@@ -78,3 +78,12 @@ replay:
 review:
 	@test -n "$(WELLBORE)" || { echo "usage: make review WELLBORE=<key or name>"; exit 2; }
 	uv run python scripts/review.py --wellbore "$(WELLBORE)"
+
+# Evaluation answer key (local, holds held-out facts; prints counts only).
+answer-key:
+	uv run python scripts/answer_key.py
+
+# One evaluation release (evaluation/RULES.md): make evaluate RELEASE=r1
+evaluate:
+	@test -n "$(RELEASE)" || { echo "usage: make evaluate RELEASE=r<n>"; exit 2; }
+	uv run python scripts/evaluate.py --release "$(RELEASE)"

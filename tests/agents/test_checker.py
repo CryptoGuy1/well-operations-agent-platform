@@ -723,3 +723,49 @@ def test_years_npdids_and_quoted_sizes() -> None:
     found = [(u.sentence, u.text) for u in Checker.unclaimed(document)]
     # 2014 is covered by the date claim; 9 by the quote; 2014 m by the depth claim.
     assert found == [(0, "2016"), (1, "20")]
+
+
+def test_section_zero_is_the_section_before_the_first(warehouse: Any) -> None:
+    import duckdb
+
+    from well_ops.connectors.base import connect
+    from well_ops.connectors.guard import HeldOutGuard
+    from well_ops.connectors.redaction import Redactor
+
+    con = duckdb.connect(str(warehouse))
+    con.execute(
+        "insert into marts.dim_hole_section (section_id, wellbore_key, section_number, "
+        "new_hole_drilled_m) values (?, ?, 0, 17.0)",
+        [f"{T2}#before_first_section", T2],
+    )
+    con.close()
+    checker = Checker(connect(warehouse), HeldOutGuard([], False), Redactor([]))
+    zero = f"ddr:hole-section:{T2}#before_first_section"
+    c = claim("depth_m", 17.0, [zero], metric="new_hole_drilled", section=0, **WELL)
+    assert check(checker, c).verdict is V
+
+
+def test_value_only_waives_evidence_for_scope_metrics(checker: Checker) -> None:
+    size = claim("hole_size_in", 12.25, [], metric="section_hole_size", section=2, **WELL)
+    wrong = size.model_copy(update={"id": "c2", "value": 8.5})
+    unrelated = size.model_copy(update={"id": "c3", "evidence_ids": [f"ddr:hole-section:{T2}#1"]})
+    text = claim("quote", "Waited on weather.", [], metric="quote")
+    text = text.model_copy(update={"id": "c4"})
+    results = {
+        r.claim_id: r.verdict for r in (
+            checker.check_claim(c, value_only=True) for c in (size, wrong, unrelated, text)
+        )
+    }  # fmt: skip
+    assert results == {"c1": V, "c2": C, "c3": V, "c4": U}  # a quote still needs its row
+    assert checker.check_claim(size).verdict is U  # the full check still needs evidence
+
+
+def test_compute_gives_a_metric_without_a_claim(checker: Checker) -> None:
+    scope: dict[str, Any] = {"wellbore": T2, "section": 2}
+    assert checker.compute("section_hole_size", scope).value == 12.25
+    assert checker.compute("lost_hours", {"wellbore": T2, "tier": "primary"}).value == 8.5
+    with pytest.raises(ValueError, match="without a claim"):
+        checker.compute("quote", {"wellbore": T2})
+    with pytest.raises(ValueError, match="section_not_found"):
+        checker.compute("section_hole_size", {"wellbore": T2, "section": 9})
+    assert checker.wellbore_key("XX/1-A-1 T2") == T2 and checker.wellbore_key("nope") is None

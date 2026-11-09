@@ -9,6 +9,10 @@ For each claim the checker
 4. requires every cited id to be one of those ids, then compares the stated value with the
    recomputed one within the tolerance of the claim type (evaluation/RULES.md).
 
+Value-only checking (evaluation baselines, evaluation/RULES.md) skips steps 2 and 4 for metrics
+recomputed from their scope alone; metrics defined by the cited rows (activity durations, dates
+and codes, quotations) still need their evidence.
+
 A claim is verified, contradicted, unsupported (no, malformed, unknown or unrelated evidence, or a
 wellbore that cannot be resolved or is held out) or unverifiable (a metric or scope the checker
 cannot compute). Every claim gets a result; none is dropped or corrected. No language model takes
@@ -200,7 +204,7 @@ class _Context:
     cur: duckdb.DuckDBPyConnection
     guard: HeldOutGuard
     redactor: Redactor
-    claim: Claim
+    claim: Claim | None  # None when a metric is computed for the answer key
     cited: list[tuple[evidence.EvidenceId, Row]]
 
     def wellbore(self, scope: Scope, name: str = "wellbore") -> str:
@@ -252,12 +256,19 @@ def _id(kind: str, **values: object) -> str:
     return evidence.build(kind, **values)
 
 
+BEFORE_FIRST_SECTION = "before_first_section"  # section 0: activities before the first one
+
+
+def _section_name(number: int) -> str:
+    return BEFORE_FIRST_SECTION if number == 0 else str(number)
+
+
 def _section_id(key: str, number: int) -> str:
-    return f"{key}#{number}"
+    return f"{key}#{_section_name(number)}"
 
 
 def _section_evidence(key: str, number: int) -> str:
-    return _id("ddr:hole-section", wellbore_key=key, section=number)
+    return _id("ddr:hole-section", wellbore_key=key, section=_section_name(number))
 
 
 def _wellbore_evidence(key: str) -> str:
@@ -630,6 +641,8 @@ def activity_code(ctx: _Context, scope: Scope) -> Computed:
 def quote(ctx: _Context, scope: Scope) -> Computed:
     """Text that appears exactly in a text field of a cited row, after redaction."""
     ctx.check_cited_wellbore(scope)
+    if ctx.claim is None:
+        raise _Fail(Verdict.UNVERIFIABLE, "needs_a_claim")
     stated = str(ctx.claim.value)
     for _, row in ctx.cited:
         for value in row.values():
@@ -715,6 +728,9 @@ METRICS: dict[str, Metric] = {
     "activity_code": _metric(ClaimType.CODE, WELLBORE, activity_code),
     "quote": _metric(ClaimType.QUOTE, WELLBORE, quote),
 }
+# Metrics recomputed from the cited rows, not from the scope: they need evidence even when values
+# are checked without it.
+EVIDENCE_DEFINED = frozenset({"activity_duration", "activity_date", "activity_code", "quote"})
 
 
 # --- Evidence rows ---------------------------------------------------------------------------
@@ -895,27 +911,53 @@ class Checker:
             Redactor.from_file(settings.redaction_denylist_path),
         )
 
-    def check(self, document: Document) -> list[ClaimResult]:
-        """One result per claim, in document order."""
-        return [self.check_claim(claim) for claim in document.claims()]
+    def check(self, document: Document, *, value_only: bool = False) -> list[ClaimResult]:
+        """One result per claim, in document order. `value_only` waives the evidence requirement
+        for metrics recomputed from their scope (evaluation baselines)."""
+        return [self.check_claim(claim, value_only=value_only) for claim in document.claims()]
+
+    def compute(self, metric: str, scope: Mapping[str, Scalar]) -> Computed:
+        """A metric's value for a scope, without a claim (the evaluation answer key). Raises
+        ValueError for a metric or scope the checker cannot compute."""
+        found = METRICS.get(metric)
+        if found is None or metric in EVIDENCE_DEFINED:
+            raise ValueError(f"metric {metric!r} cannot be computed without a claim")
+        cur = self._con.cursor()
+        try:
+            return found.compute(
+                _Context(cur, self.guard, self.redactor, None, []), Scope(scope, found.scope)
+            )
+        except _Fail as fail:
+            raise ValueError(f"{metric}: {fail.reason}") from None
+
+    def wellbore_key(self, text: str) -> str | None:
+        """The D1 key of a wellbore name or key, or None if it does not resolve."""
+        try:
+            return resolve_wellbore(self._con.cursor(), text)
+        except ToolError:
+            return None
 
     @staticmethod
     def unclaimed(document: Document) -> list[UnclaimedNumber]:
         return unclaimed_numbers(document)
 
-    def check_claim(self, claim: Claim) -> ClaimResult:
+    def check_claim(self, claim: Claim, *, value_only: bool = False) -> ClaimResult:
         try:
-            return self._check(claim)
+            return self._check(claim, value_only=value_only)
         except _Fail as fail:
             return ClaimResult(claim.id, fail.verdict, fail.reason, detail=fail.detail)
 
-    def _check(self, claim: Claim) -> ClaimResult:
+    def _check(self, claim: Claim, *, value_only: bool) -> ClaimResult:
         metric = METRICS.get(claim.what.metric)
         if metric is None:
             raise _Fail(Verdict.UNVERIFIABLE, "unknown_metric")
         if claim.type not in metric.types:
             raise _Fail(Verdict.UNVERIFIABLE, "metric_not_for_type")
         scope = Scope(claim.what.scope, metric.scope)
+        if value_only and claim.what.metric not in EVIDENCE_DEFINED:
+            cur = self._con.cursor()
+            ctx = _Context(cur, self.guard, self.redactor, claim, [])
+            return self._compare(claim, metric.compute(ctx, scope))
         if not claim.evidence_ids:
             raise _Fail(Verdict.UNSUPPORTED, "no_evidence")
         cur = self._con.cursor()
