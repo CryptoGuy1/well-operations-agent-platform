@@ -119,13 +119,20 @@ def evidence_ids(value: Any) -> list[str]:
 
 @dataclass(frozen=True)
 class Prices:
-    """Model prices in USD per million tokens, as listed by the provider on `checked_on`."""
+    """Model prices in USD per million tokens, as listed by the provider on `checked_on`. With a
+    threshold, a call whose prompt (input, cache-write and cache-read tokens) is above it has all
+    its tokens priced at the `above_*` prices."""
 
     input_per_mtok_usd: float
     output_per_mtok_usd: float
     checked_on: dt.date
     cache_write_per_mtok_usd: float | None = None
     cache_read_per_mtok_usd: float | None = None
+    threshold_tokens: int | None = None
+    above_input_per_mtok_usd: float | None = None
+    above_output_per_mtok_usd: float | None = None
+    above_cache_write_per_mtok_usd: float | None = None
+    above_cache_read_per_mtok_usd: float | None = None
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Prices | None:
@@ -141,10 +148,16 @@ class Prices:
             settings.price_checked_on,
             settings.price_cache_write_per_mtok_usd,
             settings.price_cache_read_per_mtok_usd,
+            settings.price_tier_threshold_tokens,
+            settings.price_above_input_per_mtok_usd,
+            settings.price_above_output_per_mtok_usd,
+            settings.price_above_cache_write_per_mtok_usd,
+            settings.price_above_cache_read_per_mtok_usd,
         )
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any] | None) -> Prices | None:
+        """Logs written before two-tier pricing have no tier keys: one tier."""
         if data is None:
             return None
         return cls(
@@ -153,6 +166,11 @@ class Prices:
             dt.date.fromisoformat(data["checked_on"]),
             data.get("cache_write_per_mtok_usd"),
             data.get("cache_read_per_mtok_usd"),
+            data.get("threshold_tokens"),
+            data.get("above_input_per_mtok_usd"),
+            data.get("above_output_per_mtok_usd"),
+            data.get("above_cache_write_per_mtok_usd"),
+            data.get("above_cache_read_per_mtok_usd"),
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -162,16 +180,34 @@ class Prices:
             "checked_on": self.checked_on.isoformat(),
             "cache_write_per_mtok_usd": self.cache_write_per_mtok_usd,
             "cache_read_per_mtok_usd": self.cache_read_per_mtok_usd,
+            "threshold_tokens": self.threshold_tokens,
+            "above_input_per_mtok_usd": self.above_input_per_mtok_usd,
+            "above_output_per_mtok_usd": self.above_output_per_mtok_usd,
+            "above_cache_write_per_mtok_usd": self.above_cache_write_per_mtok_usd,
+            "above_cache_read_per_mtok_usd": self.above_cache_read_per_mtok_usd,
         }
 
     def cost(self, usage: Mapping[str, int | None]) -> float | None:
-        """USD for one call; None if the usage holds a token kind without a price."""
-        rates = {
-            "input_tokens": self.input_per_mtok_usd,
-            "output_tokens": self.output_per_mtok_usd,
-            "cache_creation_input_tokens": self.cache_write_per_mtok_usd,
-            "cache_read_input_tokens": self.cache_read_per_mtok_usd,
-        }
+        """USD for one call, at the tier of its prompt size; None if the usage holds a token
+        kind without a price."""
+        prompt = sum(
+            usage.get(kind) or 0
+            for kind in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+        )
+        if self.threshold_tokens is not None and prompt > self.threshold_tokens:
+            rates = {
+                "input_tokens": self.above_input_per_mtok_usd,
+                "output_tokens": self.above_output_per_mtok_usd,
+                "cache_creation_input_tokens": self.above_cache_write_per_mtok_usd,
+                "cache_read_input_tokens": self.above_cache_read_per_mtok_usd,
+            }
+        else:
+            rates = {
+                "input_tokens": self.input_per_mtok_usd,
+                "output_tokens": self.output_per_mtok_usd,
+                "cache_creation_input_tokens": self.cache_write_per_mtok_usd,
+                "cache_read_input_tokens": self.cache_read_per_mtok_usd,
+            }
         total = 0.0
         for kind, n in usage.items():
             if not n:
@@ -561,8 +597,15 @@ def replay(path: Path, checker: Checker | None = None) -> str:
             "not configured, so cost is unknown"
             if start["prices"] is None
             else f"USD {start['prices']['input_per_mtok_usd']} input and "
-            f"{start['prices']['output_per_mtok_usd']} output per million tokens, "
-            f"checked on {start['prices']['checked_on']}"
+            f"{start['prices']['output_per_mtok_usd']} output per million tokens"
+            + (
+                ""
+                if start["prices"].get("threshold_tokens") is None
+                else f" (USD {start['prices']['above_input_per_mtok_usd']} and "
+                f"{start['prices']['above_output_per_mtok_usd']} for a prompt above "
+                f"{start['prices']['threshold_tokens']} tokens)"
+            )
+            + f", checked on {start['prices']['checked_on']}"
         ),
     ]
     if end is None:

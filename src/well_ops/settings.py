@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     # cache without its price has unknown cost.
     price_cache_write_per_mtok_usd: float | None = Field(default=None, ge=0)
     price_cache_read_per_mtok_usd: float | None = Field(default=None, ge=0)
+    # Two-tier pricing: a call whose prompt (input, cache-write and cache-read tokens) is above
+    # the threshold has all its tokens priced at the above-threshold prices. Unset: one tier.
+    price_tier_threshold_tokens: int | None = Field(default=None, ge=1)
+    price_above_input_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_above_output_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_above_cache_write_per_mtok_usd: float | None = Field(default=None, ge=0)
+    price_above_cache_read_per_mtok_usd: float | None = Field(default=None, ge=0)
 
     # Connectors.
     tool_row_cap: int = Field(default=200, ge=1)
@@ -69,6 +76,22 @@ class Settings(BaseSettings):
         cache = (self.price_cache_write_per_mtok_usd, self.price_cache_read_per_mtok_usd)
         if any(p is not None for p in cache) and prices[0] is None:
             raise ValueError("cache prices need the input and output prices")
+        above = (
+            self.price_above_input_per_mtok_usd,
+            self.price_above_output_per_mtok_usd,
+            self.price_above_cache_write_per_mtok_usd,
+            self.price_above_cache_read_per_mtok_usd,
+        )
+        if self.price_tier_threshold_tokens is not None and (
+            prices[0] is None or above[0] is None or above[1] is None
+        ):
+            raise ValueError(
+                "WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS needs the input and output prices and "
+                "WELL_OPS_PRICE_ABOVE_INPUT_PER_MTOK_USD and "
+                "WELL_OPS_PRICE_ABOVE_OUTPUT_PER_MTOK_USD"
+            )
+        if any(p is not None for p in above) and self.price_tier_threshold_tokens is None:
+            raise ValueError("above-threshold prices need WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS")
         return self
 
     def require_model(self) -> str:

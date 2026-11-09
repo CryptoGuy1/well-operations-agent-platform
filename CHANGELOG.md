@@ -91,6 +91,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   first-draft claims and numbers the final draft does not have (`well_ops.agents.revision`).
 - `prompts/post_well_review/CHANGELOG.md`: prompt versions and their status.
 - Checker: campaign numbers ("campaign 1") are identifiers, not unclaimed numbers.
+- Two-tier model pricing: `WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS` and the
+  `WELL_OPS_PRICE_ABOVE_*` prices. A call whose prompt (input, cache-write and cache-read tokens)
+  is above the threshold is priced at the upper tier; cost stays per model call.
 - The revision findings ask the agent to back an unclaimed number with a claim (a date with
   `activity_date`, report text with a quote) and to remove it only if no tool row supports it.
 

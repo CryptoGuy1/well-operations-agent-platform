@@ -65,3 +65,18 @@ def test_prices_are_set_together(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("WELL_OPS_PRICE_OUTPUT_PER_MTOK_USD", "7.5")
     monkeypatch.setenv("WELL_OPS_PRICE_CHECKED_ON", "2020-01-01")
     assert Settings().price_output_per_mtok_usd == 7.5
+
+
+def test_the_price_tier_needs_its_prices(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WELL_OPS_PRICE_INPUT_PER_MTOK_USD", "1.5")
+    monkeypatch.setenv("WELL_OPS_PRICE_OUTPUT_PER_MTOK_USD", "7.5")
+    monkeypatch.setenv("WELL_OPS_PRICE_CHECKED_ON", "2020-01-01")
+    monkeypatch.setenv("WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS", "1000")
+    with pytest.raises(ValidationError, match="ABOVE_INPUT"):
+        Settings()
+    monkeypatch.setenv("WELL_OPS_PRICE_ABOVE_INPUT_PER_MTOK_USD", "3")
+    monkeypatch.setenv("WELL_OPS_PRICE_ABOVE_OUTPUT_PER_MTOK_USD", "11.25")
+    assert Settings().price_tier_threshold_tokens == 1000
+    monkeypatch.delenv("WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS")
+    with pytest.raises(ValidationError, match="need WELL_OPS_PRICE_TIER_THRESHOLD_TOKENS"):
+        Settings()

@@ -149,6 +149,11 @@ def test_a_run_is_a_hash_chained_sequence(
         "checked_on": "2020-01-01",
         "cache_write_per_mtok_usd": None,
         "cache_read_per_mtok_usd": None,
+        "threshold_tokens": None,
+        "above_input_per_mtok_usd": None,
+        "above_output_per_mtok_usd": None,
+        "above_cache_write_per_mtok_usd": None,
+        "above_cache_read_per_mtok_usd": None,
     }
     assert end["elapsed_ms"] == 6000 and events[-1]["at"] == "2020-01-01T00:00:06+00:00"
 
@@ -250,6 +255,24 @@ def test_cache_tokens_are_priced_when_cache_prices_are_set() -> None:
     usage = {"input_tokens": 100, "output_tokens": 10, "cache_creation_input_tokens": 1000}
     # 100 * 10 + 10 * 50 + 1000 * 12.5, per million tokens.
     assert prices.cost({**usage, "cache_read_input_tokens": 2000}) == 0.016
+
+
+def test_a_call_above_the_threshold_is_priced_at_the_upper_tier() -> None:
+    # Fictional prices: 10/50/12.5/1 per million tokens, 20/75/25/2 above 1000 prompt tokens.
+    prices = Prices(10.0, 50.0, dt.date(2020, 1, 1), 12.5, 1.0, 1000, 20.0, 75.0, 25.0, 2.0)
+    # Prompt 100 + 400 + 500 = 1000 tokens: not above the threshold.
+    at = {"input_tokens": 100, "cache_creation_input_tokens": 400, "cache_read_input_tokens": 500}
+    assert prices.cost({**at, "output_tokens": 10}) == 0.007
+    # Prompt 1001 tokens: every token at the upper tier, output included.
+    above = {**at, "input_tokens": 101, "output_tokens": 10}
+    assert prices.cost(above) == 0.01377
+    assert Prices.from_dict(prices.as_dict()) == prices
+
+
+def test_a_missing_upper_tier_price_makes_cost_unknown() -> None:
+    prices = Prices(10.0, 50.0, dt.date(2020, 1, 1), 12.5, 1.0, 1000, 20.0, 75.0)
+    assert prices.cost({"input_tokens": 100, "cache_read_input_tokens": 1000}) is None
+    assert prices.cost({"input_tokens": 100, "cache_read_input_tokens": 900}) == 0.0019
 
 
 def test_tokens_are_always_logged(tmp_path: Path, prompt: Path) -> None:
