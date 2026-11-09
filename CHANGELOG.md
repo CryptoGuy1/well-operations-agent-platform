@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0-rules] - 2026-11-09
+
 ### Added
 
 - ADR 0004 (agent architecture): one MCP server per source over the read-only warehouse, typed
