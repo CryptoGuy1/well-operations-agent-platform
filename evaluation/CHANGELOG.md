@@ -7,6 +7,25 @@ and the release number it applies from.
 
 ## Changes
 
+### 2026-11-10: release r2 completed
+
+r2 ran on commit `9d230c1` with the changes of the 2026-11-09 entry and nothing else changed: 30 of 30 runs
+scored (15 primary, 15 baseline), no task failures, USD 4.9212 of the USD 8 cap. One primary run
+hit a streaming `ReadTimeout`; it was classified as a network error and rerun once, and the
+rerun scored. The secondary model was not configured and did not run.
+
+- Primary system, first draft (scored): claim accuracy 100.0 % over all runs (lowest run
+  99.5 %); 1 contradicted claim of 3077 first-draft claims, in one run, not on an answer-key
+  fact; 0 answer-key facts wrong; answer-key coverage 64.1 % (47.3 % to 77.7 %); unsupported
+  rate 5.1 %, unverifiable rate 0.6 %, unclaimed-number rate 2.9 %.
+- Final draft after checker feedback (reported separately, 13 runs; 2 runs had no findings and
+  no revision): 0 contradicted claims, coverage 70.3 %.
+- Baseline (same model, no tools): every draft completed with 0 claims and 0 unclaimed numbers,
+  so coverage is 0.0 % and the claim rates are not defined. 9 of its 146 sentences, in 7 of 15
+  drafts, state that information is unknown or unavailable (keyword count); no sentence holds
+  a number the checker counts as a quantity. The baseline therefore does not measure value
+  accuracy without tools.
+
 ### 2026-11-09: release r1 failed; applies from release r2
 
 r1 failed: all 3 completed primary runs hit max_tokens 64000 before submitting a draft (task

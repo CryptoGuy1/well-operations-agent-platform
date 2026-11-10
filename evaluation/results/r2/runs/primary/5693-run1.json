@@ -1,0 +1,2349 @@
+{
+  "agent_error": null,
+  "agent_status": "completed",
+  "attempts": [
+    {
+      "error": null,
+      "kind": null,
+      "run_id": "20261110T013814Z-6cce3390"
+    }
+  ],
+  "cost_usd": 0.311736,
+  "elapsed_ms": 283168,
+  "final_draft": {
+    "accuracy": 1.0,
+    "claims": 225,
+    "contradicted": 0,
+    "coverage": {
+      "covered": 60,
+      "details": [
+        {
+          "metric": "section_count",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "first_report_date",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "last_report_date",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_count",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 1,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 2,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 2,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 3,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 3,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 4,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 4,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 5,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 5,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 6,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 6,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 7,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 7,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 7,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 7,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 8,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 8,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 8,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 9,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 9,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 9,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 10,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 10,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 10,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 10,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 11,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 11,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 11,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 11,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 12,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 12,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 12,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 12,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 13,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 13,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 14,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 14,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 14,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 15,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 15,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 15,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 15,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 16,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 16,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 17,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 18,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 18,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 18,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "code": "interruption -- waiting on weather",
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        }
+      ],
+      "facts": 91,
+      "missing": 31,
+      "rate": 0.6593406593406593,
+      "wrong": 0
+    },
+    "unclaimed": 0,
+    "unclaimed_rate": 0.0,
+    "unsupported": 0,
+    "unsupported_rate": 0.0,
+    "unverifiable": 0,
+    "unverifiable_rate": 0.0,
+    "verified": 225
+  },
+  "first_draft": {
+    "accuracy": 1.0,
+    "claims": 221,
+    "contradicted": 0,
+    "coverage": {
+      "covered": 51,
+      "details": [
+        {
+          "metric": "section_count",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "first_report_date",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "last_report_date",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_count",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 1,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 2,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 2,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 3,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 3,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 4,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 4,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 5,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 5,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 6,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 6,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 7,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 7,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 7,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 7,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 8,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 8,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 8,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 9,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 9,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 9,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 10,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 10,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 10,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 10,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 11,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 11,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 11,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 11,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 12,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 12,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 12,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 12,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 13,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 13,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 14,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 14,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 14,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 15,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 15,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 15,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 15,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 16,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 16,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 17,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 18,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 18,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 18,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "code": "interruption -- waiting on weather",
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        }
+      ],
+      "facts": 91,
+      "missing": 40,
+      "rate": 0.5604395604395604,
+      "wrong": 0
+    },
+    "unclaimed": 5,
+    "unclaimed_rate": 0.022123893805309734,
+    "unsupported": 9,
+    "unsupported_rate": 0.04072398190045249,
+    "unverifiable": 0,
+    "unverifiable_rate": 0.0,
+    "verified": 212
+  },
+  "model": "claude-haiku-5-5",
+  "model_calls": 4,
+  "removed": {
+    "claim_ids": [],
+    "claims": 0,
+    "numbers": 1
+  },
+  "run": 1,
+  "run_id": "20261110T013814Z-6cce3390",
+  "status": "scored",
+  "system": "primary",
+  "tool_calls": 9,
+  "value_only": {
+    "accuracy": 1.0,
+    "claims": 221,
+    "contradicted": 0,
+    "coverage": {
+      "covered": 60,
+      "details": [
+        {
+          "metric": "section_count",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "first_report_date",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "last_report_date",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_count",
+          "scope": {
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_start_date",
+          "scope": {
+            "campaign": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "campaign_end_date",
+          "scope": {
+            "campaign": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 1,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 1,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 2,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 2,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 2,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 3,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 3,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 3,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 4,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 4,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 4,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 5,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 5,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 5,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_hole_size",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "new_hole_drilled",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_drilling_rate",
+          "scope": {
+            "section": 6,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 6,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 6,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 7,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 7,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 7,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 7,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 8,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 8,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 8,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 9,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 9,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 9,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 10,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 10,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 10,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 10,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 11,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 11,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 11,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 11,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 12,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 12,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 12,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 12,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 13,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 13,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 14,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 14,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 14,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 15,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_end_md",
+          "scope": {
+            "section": 15,
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 15,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 15,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 16,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 16,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 17,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "section_start_md",
+          "scope": {
+            "section": 18,
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 18,
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "section": 18,
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "code": "interruption -- waiting on weather",
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "missing"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "tier": "primary",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        },
+        {
+          "metric": "lost_hours",
+          "scope": {
+            "tier": "possible",
+            "wellbore": "5693"
+          },
+          "status": "covered"
+        }
+      ],
+      "facts": 91,
+      "missing": 31,
+      "rate": 0.6593406593406593,
+      "wrong": 0
+    },
+    "unclaimed": 5,
+    "unclaimed_rate": 0.022123893805309734,
+    "unsupported": 0,
+    "unsupported_rate": 0.0,
+    "unverifiable": 0,
+    "unverifiable_rate": 0.0,
+    "verified": 221
+  },
+  "wellbore_key": "5693",
+  "wellbore_name": "15/9-F-4"
+}
