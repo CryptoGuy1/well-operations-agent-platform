@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0-eval-r2] - 2026-11-10
+
+### Added
+
+- First scored evaluation release, r2 (`evaluation/results/r2/`), and the record of the failed
+  release r1 (`evaluation/results/r1/`); outcomes in `evaluation/CHANGELOG.md`.
+
 ### Fixed
 
 - The evaluation harness counts the HTTP library's transport errors (a read timeout while a
