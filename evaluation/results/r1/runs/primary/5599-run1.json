@@ -1,0 +1,26 @@
+{
+  "agent_error": "max_tokens",
+  "agent_status": "failed",
+  "attempts": [
+    {
+      "error": null,
+      "kind": null,
+      "run_id": "20261109T211214Z-3c3f1e48"
+    }
+  ],
+  "cost_usd": 0.219316,
+  "elapsed_ms": 229062,
+  "final_draft": null,
+  "first_draft": null,
+  "model": "claude-haiku-5-5",
+  "model_calls": 3,
+  "removed": null,
+  "run": 1,
+  "run_id": "20261109T211214Z-3c3f1e48",
+  "status": "task_failure",
+  "system": "primary",
+  "tool_calls": 10,
+  "value_only": null,
+  "wellbore_key": "5599",
+  "wellbore_name": "15/9-F-12"
+}
