@@ -95,6 +95,16 @@ def test_infrastructure_errors_are_classified() -> None:
     assert harness.classify(ValueError("x")) is None
 
 
+def test_transport_errors_while_streaming_are_network_errors() -> None:
+    errors = [
+        httpx.ReadTimeout("timed out", request=REQUEST),
+        httpx.ConnectTimeout("timed out", request=REQUEST),
+        httpx.RemoteProtocolError("incomplete chunked read", request=REQUEST),
+        httpx.ReadError("connection reset", request=REQUEST),
+    ]
+    assert [harness.classify(e) for e in errors] == ["network"] * 4
+
+
 KEY = WellboreKey("9001:T2", "XX/1-A-1 T2", "development", [1], [])
 
 

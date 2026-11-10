@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The evaluation harness counts the HTTP library's transport errors (a read timeout while a
+  response streams) as network errors and reruns them, and streamed responses wait up to 1800 s
+  between two bytes.
+
+### Changed
+
+- `max_tokens` is 128000 by default and in the frozen evaluation settings (release r2 on); see
+  `evaluation/CHANGELOG.md`.
+
 ## [0.3.0-rules] - 2026-11-09
 
 ### Added

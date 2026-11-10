@@ -11,8 +11,8 @@ baseline, the secondary model, failures and the budget. The harness (`well_ops.e
 
 - **Primary system**: the post-well review agent with prompt
   `prompts/post_well_review/v3.md`, model `claude-haiku-5-5` at default effort (no effort
-  sent), `max_tokens` 64000, `max_steps` 20 and `tool_row_cap` 200, on a committed code
-  version (a working tree with changes is refused).
+  sent), `max_tokens` 128000 (64000 in release r1), `max_steps` 20 and `tool_row_cap` 200,
+  on a committed code version (a working tree with changes is refused).
 - **Scored set**: the 5 held-out wellbores of `evaluation/splits.json`, only. Development
   wellbores are never scored, and nothing is tuned on held-out wellbores.
 - **Runs**: 3 runs per wellbore and system, run 1 on every wellbore before run 2. Each run is

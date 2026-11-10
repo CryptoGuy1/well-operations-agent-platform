@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import anthropic
+import httpx2
 
 from well_ops.agents.audit_log import Prices, Run, RunLog, read_events
 from well_ops.agents.checker import Checker, ClaimResult, UnclaimedNumber
@@ -41,7 +42,7 @@ PRIMARY_MODEL = "claude-haiku-5-5"
 SECONDARY_MODEL = "claude-sonnet-5-5"
 FROZEN_SETTINGS: dict[str, Any] = {
     "effort": None,
-    "max_tokens": 64000,
+    "max_tokens": 128000,
     "max_steps": 20,
     "tool_row_cap": 200,
 }
@@ -87,8 +88,10 @@ def frozen_setting_errors(settings: Settings, model: str) -> list[str]:
 
 
 def classify(error: BaseException) -> str | None:
-    """The infrastructure error kind that allows a rerun, or None."""
-    if isinstance(error, anthropic.APIConnectionError):
+    """The infrastructure error kind that allows a rerun, or None. A transport error of the HTTP
+    library (a read timeout or a dropped connection while a response streams) is not wrapped by
+    the SDK, so it is a network error too."""
+    if isinstance(error, (anthropic.APIConnectionError, httpx2.TransportError)):
         return "network"
     if isinstance(error, anthropic.RateLimitError):
         return "rate_limit"

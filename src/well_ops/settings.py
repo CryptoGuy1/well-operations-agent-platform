@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # The model provider's API key, from the environment or .env; never logged or printed.
     provider_api_key: SecretStr | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
     # Per model response, thinking included; responses are streamed, so a high cap is safe.
-    max_tokens: int = Field(default=64000, ge=1)
+    max_tokens: int = Field(default=128000, ge=1)
     # Thinking depth (output_config.effort); sent only when set.
     effort: Literal["low", "medium", "high", "xhigh", "max"] | None = None
     max_steps: int = Field(default=20, ge=1)

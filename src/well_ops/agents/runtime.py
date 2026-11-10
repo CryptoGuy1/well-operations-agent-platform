@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+import httpx2
 from anthropic import AsyncAnthropic
 from anthropic.types import Message
 from mcp.client.client import Client
@@ -128,6 +129,11 @@ class TokenCounter(Protocol):
     async def count_tokens(self, params: Mapping[str, Any]) -> int: ...
 
 
+# The longest wait between two streamed bytes. Thinking can stream no text, so the read timeout
+# covers a whole 128000-token response at 71 tokens/s, well below the slowest rate logged so far.
+STREAM_TIMEOUT = httpx2.Timeout(1800.0, connect=5.0)
+
+
 class MessagesApiModel:
     """The provider's Messages API, streamed so long responses do not time out."""
 
@@ -135,7 +141,7 @@ class MessagesApiModel:
         self._client = client or AsyncAnthropic()
 
     async def create(self, params: Mapping[str, Any]) -> Message:
-        async with self._client.messages.stream(**params) as stream:
+        async with self._client.messages.stream(**params, timeout=STREAM_TIMEOUT) as stream:
             return await stream.get_final_message()
 
     async def count_tokens(self, params: Mapping[str, Any]) -> int:
