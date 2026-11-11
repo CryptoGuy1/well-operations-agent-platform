@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `make console-data` (`well_ops.console_data`): exports `console/public/data/` (wells, runs,
   evaluation releases, production reconciliation and data health) deterministically, redacts
   every exported string, and scans the bundle for personal data (counts only).
+- `console/`: the console skeleton (Vite, React, TypeScript strict, hash routes, ESLint, Prettier,
+  Vitest with Testing Library; exact dependency versions). Design tokens for light and dark
+  themes (WCAG AA), self-hosted IBM Plex fonts, a status language with text labels, side
+  navigation that collapses to a menu, a skip link and the data attributions on every page. The
+  Overview page states the r2 result from the bundle; the other pages are placeholders.
+  `make console-dev`, `make console-build` and `make console-check`.
 - `console/public/data/`: the first bundle. `NOTICE` records that it distributes data derived from
   the Volve and Sodir sources under their licences.
 

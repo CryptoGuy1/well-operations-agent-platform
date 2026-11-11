@@ -1,0 +1,81 @@
+/* Design tokens. Every colour is a role; components use roles, never raw values.
+   Contrast (WCAG 2.1): every text role is at least 5.3:1 on ground, surface and the status tints,
+   in both themes. */
+
+:root {
+  color-scheme: light;
+
+  --font-sans:
+    "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono:
+    "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --color-ground: #f3f4f1;
+  --color-surface: #ffffff;
+  --color-border: #daddd6;
+  --color-ink: #15212b;
+  --color-muted: #56626c;
+  --color-accent: #0b6b66;
+  --color-accent-tint: #e3f1ef;
+  --color-warning: #8a4205;
+  --color-warning-tint: #fcefdf;
+  --color-error: #a52a1e;
+  --color-error-tint: #fbe9e7;
+  --color-on-accent: #ffffff;
+
+  --color-nav: #15212b;
+  --color-nav-ink: #f3f4f1;
+  --color-nav-muted: #a9b5be;
+  --color-nav-accent: #7acfc6;
+  --color-nav-hover: rgb(255 255 255 / 0.05);
+  --color-nav-selected: rgb(255 255 255 / 0.11);
+
+  --color-focus: #0b6b66;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+
+  --radius: 6px;
+  --nav-width: 15rem;
+  --content-width: 64rem;
+}
+
+/* Dark theme: the same roles, following the system setting. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --color-ground: #0e151b;
+    --color-surface: #16212a;
+    --color-border: #2e3c47;
+    --color-ink: #e7ecef;
+    --color-muted: #9daab4;
+    --color-accent: #5cc2b8;
+    --color-accent-tint: #12312f;
+    --color-warning: #e9a766;
+    --color-warning-tint: #36260f;
+    --color-error: #f28b7f;
+    --color-error-tint: #3d1c18;
+    --color-on-accent: #0e151b;
+
+    --color-nav: #0a1015;
+    --color-nav-ink: #e7ecef;
+    --color-nav-muted: #97a4ae;
+    --color-nav-accent: #5cc2b8;
+
+    --color-focus: #5cc2b8;
+  }
+}

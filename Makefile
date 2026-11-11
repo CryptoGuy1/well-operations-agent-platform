@@ -1,7 +1,7 @@
 .PHONY: setup lint test download download-volve audit stage extract-log dbt-build \
 	dbt-compile rebuild quality serve-ddr \
 	serve-prod serve-sodir serve-rt runs-db replay review answer-key evaluate \
-	console-data
+	console-data console-install console-dev console-build console-check
 
 setup:
 	uv sync
@@ -97,3 +97,21 @@ evaluate:
 # The console's data bundle (ADR 0005), exported locally and committed: console/public/data/.
 console-data:
 	uv run python scripts/console_data.py
+
+# The console (ADR 0005): a static site in console/, built from the committed bundle.
+console-install:
+	cd console && npm ci --no-audit --no-fund
+
+console-dev: console/node_modules
+	cd console && npm run dev
+
+console-build: console/node_modules
+	cd console && npm run build
+
+# Typecheck, lint, format check and tests of the console.
+console-check: console/node_modules
+	cd console && npm run typecheck && npm run lint && npm run format:check && npm test
+
+console/node_modules: console/package-lock.json
+	$(MAKE) console-install
+	touch console/node_modules

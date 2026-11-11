@@ -40,3 +40,7 @@ warehouse/target/
 warehouse/dbt_packages/
 warehouse/logs/
 warehouse/.user.yml
+
+# Console (Node)
+node_modules/
+*.tsbuildinfo
