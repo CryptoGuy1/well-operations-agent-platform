@@ -20,6 +20,9 @@ from well_ops.markdown import table
 LAYERS = ("staging", "intermediate", "marts", "reference")  # report order
 WIDE_MODEL_COLUMNS = 100  # models wider than this get a summary row instead of one per column
 UNDECLARED_ARRAY_VALUE = -9999  # seen in array curves that declare -999.25 as their null value
+# The last `dbt build`'s results and manifest, copied beside the warehouse by `make dbt-build`.
+# warehouse/target/ is rewritten by every dbt command, a compile included, so it is never read.
+RUN_RESULTS, MANIFEST = "dbt_run_results.json", "dbt_manifest.json"
 
 
 @dataclass(frozen=True)
@@ -310,9 +313,17 @@ def render_tests(results: dict[str, Any]) -> str:
     return text + "\n\n" + _source("dbt_test_results")
 
 
-def build_sections(database: Path, staging_dir: Path, target_dir: Path) -> dict[str, str]:
-    manifest = json.loads((target_dir / "manifest.json").read_text(encoding="utf-8"))
-    run_results = json.loads((target_dir / "run_results.json").read_text(encoding="utf-8"))
+def load_dbt(directory: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The manifest and run results of the last `dbt build`, from the warehouse directory."""
+    paths = [directory / MANIFEST, directory / RUN_RESULTS]
+    if not all(p.is_file() for p in paths):
+        raise FileNotFoundError(f"{RUN_RESULTS} or {MANIFEST} is missing; run `make dbt-build`")
+    manifest, run_results = (json.loads(p.read_text(encoding="utf-8")) for p in paths)
+    return manifest, run_results
+
+
+def build_sections(database: Path, staging_dir: Path, dbt_dir: Path) -> dict[str, str]:
+    manifest, run_results = load_dbt(dbt_dir)
     tests = dbt_test_results(run_results, manifest)
     nodes = load_nodes(manifest)
     con = duckdb.connect(str(database), read_only=True)

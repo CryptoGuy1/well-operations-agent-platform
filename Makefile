@@ -34,7 +34,7 @@ extract-log:
 DBT_ARGS = --project-dir warehouse --profiles-dir warehouse
 
 # Copies the build's results and manifest beside the warehouse, so a later dbt compile (which
-# rewrites warehouse/target/) cannot change what make console-data reads.
+# rewrites warehouse/target/) cannot change what make quality and make console-data read.
 dbt-build:
 	mkdir -p data/warehouse
 	uv run dbt build $(DBT_ARGS); status=$$?; \

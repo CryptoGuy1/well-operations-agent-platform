@@ -3,33 +3,23 @@ warehouse build time recorded by dbt and the versions of the tools that built it
 
 from __future__ import annotations
 
-import json
 from importlib.metadata import version
-from pathlib import Path
 from typing import Any
 
 import duckdb
 
 from well_ops.warehouse.quality import (
+    MANIFEST,
+    RUN_RESULTS,
     WIDE_MODEL_COLUMNS,
     dbt_test_results,
     flag_counts,
+    load_dbt,
     load_nodes,
     null_counts,
 )
 
-# Written by `make dbt-build` beside the warehouse; warehouse/target/ is rewritten by every dbt
-# command, a compile included, so it is never read here.
-RUN_RESULTS, MANIFEST = "dbt_run_results.json", "dbt_manifest.json"
-
-
-def load_dbt(directory: Path) -> tuple[dict[str, Any], dict[str, Any]]:
-    """The manifest and run results of the last `dbt build`, from the warehouse directory."""
-    paths = [directory / MANIFEST, directory / RUN_RESULTS]
-    if not all(p.is_file() for p in paths):
-        raise FileNotFoundError(f"{RUN_RESULTS} or {MANIFEST} is missing; run `make dbt-build`")
-    manifest, run_results = (json.loads(p.read_text(encoding="utf-8")) for p in paths)
-    return manifest, run_results
+__all__ = ["MANIFEST", "RUN_RESULTS", "export", "load_dbt"]
 
 
 def export(

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Any
 
@@ -5,9 +6,13 @@ import duckdb
 import pytest
 
 from well_ops.warehouse.quality import (
+    MANIFEST,
+    RUN_RESULTS,
     Node,
+    build_sections,
     dbt_test_results,
     flag_counts,
+    load_dbt,
     load_nodes,
     null_counts,
     null_value_counts,
@@ -136,3 +141,19 @@ def test_test_results_counts_by_type_and_requires_build() -> None:
     assert got["failing"] == [("s1", "fail", 3)]
     with pytest.raises(ValueError, match="dbt build"):
         dbt_test_results({**run, "args": {"which": "compile"}}, manifest)
+
+
+def test_the_report_reads_the_build_copy_not_dbt_target(tmp_path: Path) -> None:
+    """A dbt compile rewrites warehouse/target/; the report reads the copy of the last build that
+    `make dbt-build` leaves beside the warehouse, and never target's file names."""
+    target = tmp_path / "target"
+    target.mkdir()
+    for name in ("manifest.json", "run_results.json"):
+        (target / name).write_text("{}", encoding="utf-8")
+    with pytest.raises(FileNotFoundError, match="make dbt-build"):
+        build_sections(tmp_path / "w.duckdb", tmp_path, target)
+    manifest: dict[str, Any] = {"nodes": {}}
+    results = {"args": {"which": "build"}}
+    (tmp_path / MANIFEST).write_text(json.dumps(manifest), encoding="utf-8")
+    (tmp_path / RUN_RESULTS).write_text(json.dumps(results), encoding="utf-8")
+    assert load_dbt(tmp_path) == (manifest, results)
