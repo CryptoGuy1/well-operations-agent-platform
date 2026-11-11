@@ -112,3 +112,10 @@ The constraints are:
 Real-time WITSML log values are staged in Phase 2 for wellbores extracted on demand (ADR 0002 D6),
 currently 15/9-F-11 T2 only; make rebuild re-stages them from extracted wellbores. This corrects the
 earlier statement that logs are out of Phase 2 scope.
+
+### 2026-11-10
+
+PostgreSQL application state is no longer planned for Phase 5. ADR 0005 makes the console a static
+site built from a committed data bundle: runs are precomputed from the append-only run logs, and
+approval in the console is a demonstration held in the browser, not persisted. Run logs stay
+JSON Lines files read by `make runs-db` and `make replay`.
