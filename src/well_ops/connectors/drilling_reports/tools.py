@@ -115,6 +115,16 @@ def _activity(r: Sequence[Any]) -> dict[str, Any]:
     }
 
 
+def section_rate(new_hole: float | None, hours: float | None) -> tuple[float | None, str | None]:
+    """A section's average rate in m/h over its coded drilling -- drill hours, or the reason it
+    has none."""
+    if not hours:
+        return None, "no_drilling_hours"
+    if not new_hole:
+        return None, "no_new_hole"
+    return round(new_hole / hours, 2), None
+
+
 def _section_evidence(wellbore_key: str, section_id: str) -> str:
     return evidence.build(
         "ddr:hole-section", wellbore_key=wellbore_key, section=section_id.split("#", 1)[1]
@@ -465,12 +475,7 @@ class DrillingReports(ConnectorTools):
             ids = [_section_evidence(key, section_id)]
             if hours is not None:
                 ids.append(_lost_time_evidence(section_id, "drilling", "drill"))
-            if not hours:
-                rate, reason = None, "no_drilling_hours"
-            elif not new_hole:
-                rate, reason = None, "no_new_hole"
-            else:
-                rate, reason = round(new_hole / hours, 2), None
+            rate, reason = section_rate(new_hole, hours)
             out.append(
                 {
                     "section_number": int(number),

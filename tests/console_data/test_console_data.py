@@ -23,7 +23,11 @@ PERSON = "Alex Placeholder"
 REDACTOR = Redactor([PERSON])
 
 SCHEMA = """
-create schema staging; create schema intermediate; create schema marts;
+create schema staging; create schema intermediate; create schema marts; create schema reference;
+create table reference.lost_time_codes (category varchar, subcategory varchar, tier varchar);
+create table intermediate.int_ddr__activity_section (
+    report_file varchar, wellbore_key varchar, duration_hours double, category varchar,
+    subcategory varchar);
 create table marts.dim_wellbore (
     wellbore_key varchar, wellbore_name varchar, field_name varchar, is_heldout boolean);
 create table staging.stg_identifiers__wellbore_alias (
@@ -130,7 +134,23 @@ def con(tmp_path: Path) -> duckdb.DuckDBPyConnection:
             (DEV, f"{DEV}#1", "interruption", "wait", "primary", 2.5, 1),
             (DEV, f"{DEV}#1", "interruption", "repair", "primary", 1.0, 1),
             (DEV, f"{DEV}#1", "drilling", "trip", "possible", 2.0, 2),
+            (DEV, f"{DEV}#1", "drilling", "drill", "none", 20.0, 2),
             (HELD_OUT, f"{HELD_OUT}#1", "interruption", "wait", "primary", 9.0, 1),
+        ],
+        "reference.lost_time_codes": [
+            ("interruption", "wait", "primary"),
+            ("interruption", "repair", "primary"),
+            ("drilling", "trip", "possible"),
+        ],
+        # The activities behind fct_lost_time above.
+        "intermediate.int_ddr__activity_section": [
+            ("R1", DEV, 2.5, "interruption", "wait"),
+            ("R1", DEV, 1.0, "drilling", "trip"),
+            ("R2", DEV, 1.0, "drilling", "trip"),
+            ("R3", DEV, 1.0, "interruption", "repair"),
+            ("R1", DEV, 12.0, "drilling", "drill"),
+            ("R3", DEV, 8.0, "drilling", "drill"),
+            ("RH", HELD_OUT, 9.0, "interruption", "wait"),
         ],
         "marts.fct_production_monthly_reconciliation": [
             (dt.date(2020, 2, 1), "workbook", "gross", "net", 20.0),
@@ -219,6 +239,7 @@ def test_a_development_wellbore_has_its_detail(
     ]
     assert d["depth_time"][1]["flags"] == ["depth_not_recorded"]
     assert d["lost_time"]["by_tier"] == [
+        {"tier": "none", "hours": 20.0, "activities": 2},
         {"tier": "possible", "hours": 2.0, "activities": 2},
         {"tier": "primary", "hours": 3.5, "activities": 2},
     ]
@@ -226,7 +247,39 @@ def test_a_development_wellbore_has_its_detail(
         d["lost_time"]["by_cause"]
     )
     assert [s["section_number"] for s in d["hole_sections"]] == [1]
+    section = d["hole_sections"][0]
+    assert (section["drill_hours"], section["rate_m_per_h"], section["rate_reason"]) == (
+        20.0,
+        50.0,
+        None,
+    )
+    assert d["rate_label"] == "average rate while coded drilling -- drill"
     assert wells.file_name("7078:T2") == "7078-T2"
+
+
+def test_lost_time_by_day_has_the_two_tiers_and_adds_up_to_them(
+    con: duckdb.DuckDBPyConnection, roles: dict[str, str]
+) -> None:
+    _, details = wells.export(con, roles)
+    lost = details[f"wells/{DEV}.json"]["lost_time"]
+    assert lost["by_day"] == [
+        {"date": dt.date(2020, 1, 2), "tier": "possible", "hours": 1.0},
+        {"date": dt.date(2020, 1, 2), "tier": "primary", "hours": 2.5},
+        {"date": dt.date(2020, 1, 3), "tier": "possible", "hours": 1.0},
+        {"date": dt.date(2020, 1, 4), "tier": "primary", "hours": 1.0},
+    ]
+    for tier in ("primary", "possible"):
+        by_day = sum(r["hours"] for r in lost["by_day"] if r["tier"] == tier)
+        assert by_day == next(r["hours"] for r in lost["by_tier"] if r["tier"] == tier)
+
+
+def test_a_section_without_drilling_hours_gives_the_reason(
+    con: duckdb.DuckDBPyConnection, roles: dict[str, str]
+) -> None:
+    con.execute("delete from marts.fct_lost_time where subcategory = 'drill'")
+    _, details = wells.export(con, roles)
+    section = details[f"wells/{DEV}.json"]["hole_sections"][0]
+    assert (section["rate_m_per_h"], section["rate_reason"]) == (None, "no_drilling_hours")
 
 
 # --- runs ---

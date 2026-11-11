@@ -15,17 +15,23 @@ import duckdb
 
 from well_ops.connectors.drilling_reports.tools import (
     CAMPAIGN,
+    CODES,
     HOLE_SECTION,
     LOST_TIME,
+    LOST_TIME_TIERS,
+    RATE_LABEL,
     REPORT,
     REPORT_DATES,
     REPORT_DAY,
     REPORT_FLAG,
     WELLBORE,
+    section_rate,
 )
 
 DEVELOPMENT, HELD_OUT, OUTSIDE = "development", "held_out", "outside_population"
 HELD_OUT_NOTE = "Held out for evaluation; see the evaluation runs."
+# The activities fct_lost_time is built from, each with its hole section.
+ACTIVITY_SECTION = "intermediate.int_ddr__activity_section"
 
 SECTION_COLUMNS = (
     "section_id",
@@ -162,6 +168,20 @@ def _lost_time(con: duckdb.DuckDBPyConnection, key: str) -> dict[str, Any]:
             for k, (h, n) in sorted(sums.items())
         ]
 
+    tiers = ", ".join(f"'{t}'" for t in LOST_TIME_TIERS)
+    by_day = _records(
+        con.execute(
+            f"""
+            select d.day as date, c.tier, sum(a.duration_hours) as hours
+            from {ACTIVITY_SECTION} a
+            join (select report_file, {REPORT_DAY} as day from {REPORT}) d using (report_file)
+            join {CODES} c on c.category = a.category and c.subcategory = a.subcategory
+            where a.wellbore_key = ? and c.tier in ({tiers})
+            group by all order by date, c.tier
+            """,
+            [key],
+        )
+    )
     return {
         "rows": [
             {**r, "hours": _round(r["hours"]), "activities": int(r["activities"])} for r in rows
@@ -169,7 +189,33 @@ def _lost_time(con: duckdb.DuckDBPyConnection, key: str) -> dict[str, Any]:
         "by_section": total("section_id", "tier"),
         "by_tier": total("tier"),
         "by_cause": total("tier", "cause"),
+        # Primary and possible lost time per operations day of the activity's report.
+        "by_day": [{**r, "hours": _round(r["hours"])} for r in by_day],
     }
+
+
+def _sections(con: duckdb.DuckDBPyConnection, key: str) -> list[dict[str, Any]]:
+    """Hole sections with the drilling rate as the drilling_rate tool gives it, or its reason."""
+    sections = _records(
+        con.execute(
+            f"""
+            select {", ".join(f"s.{c}" for c in SECTION_COLUMNS)}, l.hours as drill_hours
+            from {HOLE_SECTION} s
+            left join {LOST_TIME} l
+              on l.section_id = s.section_id and l.category = 'drilling'
+             and l.subcategory = 'drill'
+            where s.wellbore_key = ?
+            order by s.section_number
+            """,
+            [key],
+        )
+    )
+    for s in sections:
+        s["rate_m_per_h"], s["rate_reason"] = section_rate(
+            s["new_hole_drilled_m"], s["drill_hours"]
+        )
+        s["drill_hours"] = _round(s["drill_hours"])
+    return sections
 
 
 def _depth_time(con: duckdb.DuckDBPyConnection, key: str) -> list[dict[str, Any]]:
@@ -203,13 +249,7 @@ def _depth_time(con: duckdb.DuckDBPyConnection, key: str) -> list[dict[str, Any]
 
 
 def detail(con: duckdb.DuckDBPyConnection, key: str, name: str) -> dict[str, Any]:
-    sections = _records(
-        con.execute(
-            f"select {', '.join(SECTION_COLUMNS)} from {HOLE_SECTION} where wellbore_key = ? "
-            "order by section_number",
-            [key],
-        )
-    )
+    sections = _sections(con, key)
     campaigns = _records(
         con.execute(
             f"select {', '.join(CAMPAIGN_COLUMNS)} from {CAMPAIGN} where wellbore_key = ? "
@@ -232,6 +272,7 @@ def detail(con: duckdb.DuckDBPyConnection, key: str, name: str) -> dict[str, Any
         "key": key,
         "name": name,
         "hole_sections": sections,
+        "rate_label": RATE_LABEL,
         "campaigns": campaigns,
         "lost_time": _lost_time(con, key),
         "depth_time": _depth_time(con, key),
