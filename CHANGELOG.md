@@ -38,6 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `console/public/data/`: the first bundle. `NOTICE` records that it distributes data derived from
   the Volve and Sodir sources under their licences.
 
+### Fixed
+
+- A run opened with a claim in its address now brings the claim into view after the web fonts
+  load, within the part of the draft panel on screen, and moves the page when the panel cannot
+  scroll far enough.
+- On phones, what is scrolled to the top (the evidence of a selected claim) clears the sticky bar,
+  and the well page's report span no longer breaks a date at its hyphens.
+
 ## [0.4.0-eval-r2] - 2026-11-10
 
 ### Added

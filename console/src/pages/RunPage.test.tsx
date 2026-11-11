@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 
@@ -61,7 +61,10 @@ describe("Run page", () => {
     renderAt("/runs/run-fixture-1?claim=c4");
     const claim = await screen.findByRole("button", { name: /17\.5 in.*contradicted/ });
     expect(claim).toHaveAttribute("aria-pressed", "true");
-    expect(scroll.mock.contexts).toContain(claim);
+    // Once the web fonts are in, so that their reflow cannot move it again.
+    await waitFor(() => {
+      expect(scroll.mock.contexts).toContain(claim);
+    });
     vi.restoreAllMocks();
   });
 

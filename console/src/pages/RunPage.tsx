@@ -80,20 +80,37 @@ function RunView({ run }: { run: RunFile }) {
   );
 
   // Arriving with a claim in the address, bring it into view once: inside the draft panel on wide
-  // screens, the page itself when the panels are stacked.
+  // screens, the page itself when the panels are stacked. It waits for the web fonts: text set in
+  // the fallback font reflows when they load and would move the claim out of view again.
   const arrived = useRef(selected);
   useEffect(() => {
-    const id = arrived.current;
-    arrived.current = null;
-    const el = id === null ? null : document.getElementById(claimElementId(id));
-    if (!el) return;
-    const panel = el.closest(".panel");
-    if (window.matchMedia(NARROW).matches || panel === null) {
-      el.scrollIntoView({ block: "center" });
-    } else {
-      const offset = el.getBoundingClientRect().top - panel.getBoundingClientRect().top;
-      panel.scrollTop += offset - panel.clientHeight / 2;
-    }
+    let live = true;
+    const fonts = "fonts" in document ? document.fonts.ready : Promise.resolve();
+    void fonts.then(() => {
+      const id = arrived.current;
+      if (!live || id === null) return;
+      arrived.current = null;
+      const el = document.getElementById(claimElementId(id));
+      if (!el) return;
+      const panel = el.closest(".panel");
+      if (window.matchMedia(NARROW).matches || panel === null) {
+        el.scrollIntoView({ block: "center" });
+      } else {
+        // Only if it is not already in the part of the panel on screen, then centred there; near
+        // the end of the draft the panel cannot scroll that far, and the page moves the rest.
+        const box = panel.getBoundingClientRect();
+        const bottom = Math.min(box.bottom, window.innerHeight);
+        const at = el.getBoundingClientRect();
+        if (at.top < box.top || at.bottom > bottom) {
+          panel.scrollTop += at.top - box.top - (bottom - box.top) / 2;
+        }
+        const now = el.getBoundingClientRect();
+        if (now.top < 0 || now.bottom > window.innerHeight) el.scrollIntoView({ block: "center" });
+      }
+    });
+    return () => {
+      live = false;
+    };
   }, []);
 
   const reason = failureReason(run);

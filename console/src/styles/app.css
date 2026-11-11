@@ -171,6 +171,11 @@
 }
 
 @media (max-width: 47.99rem) {
+  /* What is scrolled to the top clears the sticky bar. */
+  html {
+    scroll-padding-top: 4.5rem;
+  }
+
   .shell {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto 1fr;

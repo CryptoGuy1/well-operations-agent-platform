@@ -249,3 +249,8 @@
   margin-bottom: var(--space-2);
   overflow-wrap: anywhere;
 }
+
+/* A date never breaks at its hyphens. */
+.date {
+  white-space: nowrap;
+}

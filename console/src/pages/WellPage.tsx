@@ -104,7 +104,8 @@ function WellView({ entry, detail }: { entry: WellEntry; detail: WellDetail }) {
         </Fact>
         <Fact term="Report span">
           <span className="mono">
-            {entry.first_report_date} to {entry.last_report_date}
+            <span className="date">{entry.first_report_date}</span> to{" "}
+            <span className="date">{entry.last_report_date}</span>
           </span>
           {entry.report_span_days != null && (
             <span className="cell-sub">
