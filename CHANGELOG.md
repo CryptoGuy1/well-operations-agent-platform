@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Console snapshots for the README (`make console-screenshots`): the production build served
+  locally and photographed with Playwright at desktop (1440 x 900) and phone (390 x 844) sizes,
+  saved to docs/images/console/; two runs give identical images. The README gains a Console
+  section.
 - The console's well view: a wells list with each wellbore's split role, report span, campaigns
   and flag counts (held-out wellbores by name only, linking to their evaluation runs), and a well
   page with a depth-against-time chart (hole sections as bands, primary and possible lost time by

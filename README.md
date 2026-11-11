@@ -6,6 +6,26 @@ the source data, and every run is recorded in an append-only audit log that can 
 
 **Status: Phase 2: data platform**
 
+## Console
+
+A static web console shows the agents' work on the Volve data.
+
+![The console overview](docs/images/console/overview-desktop-light.png)
+
+The overview: what the platform does and how the latest evaluation release scored.
+
+![A review run with a claim selected](docs/images/console/run-claim-desktop-light.png)
+
+The run viewer: an agent's review of 15/9-F-11 T2, every number marked by the checker, with the evidence for the selected claim.
+
+![The checker catching a contradicted claim](docs/images/console/checker-catch-desktop-dark.png)
+
+The checker catching an error: a stated 12 h of repair time that the warehouse puts at 2.75 h.
+
+![The 15/9-F-11 T2 well page](docs/images/console/well-page-desktop-light.png)
+
+The well view: depth against time with hole sections and lost time by day for 15/9-F-11 T2.
+
 ## Data sources
 
 - **Volve field data**: Equinor ASA and the Volve licence partners, released under the
@@ -33,6 +53,14 @@ With the data downloaded into `data/raw/` (`make download`, `make download-volve
 make rebuild   # parse data/raw/, then build and test the DuckDB warehouse with dbt
 make quality   # write docs/data/data-quality-report.md
 make console-data   # export the console's data bundle to console/public/data/ (ADR 0005)
+```
+
+The console needs Node.js 20.19 or later:
+
+```sh
+make console-dev          # serve the console locally
+make console-check        # typecheck, lint, format check and tests
+make console-screenshots  # rebuild the snapshots in docs/images/console/
 ```
 
 See [docs/architecture.md](docs/architecture.md) for the layers and data flow, and

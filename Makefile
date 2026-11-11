@@ -1,7 +1,7 @@
 .PHONY: setup lint test download download-volve audit stage extract-log dbt-build \
 	dbt-compile rebuild quality serve-ddr \
 	serve-prod serve-sodir serve-rt runs-db replay review answer-key evaluate \
-	console-data console-install console-dev console-build console-check
+	console-data console-install console-dev console-build console-check console-screenshots
 
 setup:
 	uv sync
@@ -111,6 +111,11 @@ console-build: console/node_modules
 # Typecheck, lint, format check and tests of the console.
 console-check: console/node_modules
 	cd console && npm run typecheck && npm run lint && npm run format:check && npm test
+
+# README snapshots of the production build, saved to docs/images/console/. Each page adds its own
+# snapshots to console/scripts/screenshots.mjs.
+console-screenshots: console/node_modules
+	cd console && npm run build && npx playwright install chromium && npm run screenshots
 
 console/node_modules: console/package-lock.json
 	$(MAKE) console-install
