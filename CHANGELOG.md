@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The console's agent run viewer: a runs list with filters by wellbore, system, model and
+  release, first-draft figures and failure reasons; and a run page with the step trace and a
+  replay control, the first and final drafts with every claim marked by its checker status and
+  unclaimed numbers marked, what the revision removed, the selected claim's check and cited
+  evidence rows, a legend of the claim marks, and approve, request-changes and reject buttons
+  that change the page only. The Overview links to the latest completed 15/9-F-11 T2 run, and to
+  the headline release's contradicted claim with that claim selected.
 - ADR 0005 (console architecture): a static React and TypeScript single-page app on
   GitHub Pages, fed by a committed data bundle; precomputed runs; approval as a demonstration
   only. ADR 0003 is amended: no PostgreSQL application state.

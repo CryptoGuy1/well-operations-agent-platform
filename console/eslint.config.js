@@ -22,4 +22,9 @@ export default tseslint.config(
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
     },
   },
+  {
+    // Fixtures and tests index into data they built themselves.
+    files: ["src/test/**", "**/*.test.{ts,tsx}"],
+    rules: { "@typescript-eslint/no-non-null-assertion": "off" },
+  },
 );

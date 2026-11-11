@@ -3,15 +3,19 @@ import { Link } from "react-router";
 
 import { Pipeline } from "../components/Pipeline";
 import { Status } from "../components/Status";
+import { firstContradictedClaim } from "../data/claims";
 import { HEADLINE_RELEASE, isRelease, primaryFigures, releasePath } from "../data/evaluation";
 import {
   FEATURED_WELLBORE,
   RUN_VIEWER_READY,
   RUNS_INDEX,
+  checkerCatchRun,
   isRunIndex,
   latestCompletedRun,
   runPath,
+  type RunIndexEntry,
 } from "../data/runs";
+import { isRunFile } from "../data/runTypes";
 import { useBundle } from "../data/useBundle";
 import { countWord, formatInteger, formatPercent } from "../format";
 import type { Figures } from "../data/evaluation";
@@ -119,7 +123,10 @@ function Actions() {
   return (
     <div className="actions">
       {RUN_VIEWER_READY ? (
-        <WatchLink />
+        <>
+          <WatchLink />
+          <CatchLink />
+        </>
       ) : (
         <button type="button" className="button button--primary" disabled>
           {WATCH}
@@ -150,6 +157,27 @@ function WatchLink() {
   return (
     <Link to={runPath(run.run_id)} className="button button--primary">
       {WATCH}
+    </Link>
+  );
+}
+
+// A contradicted claim of the headline release, selected in its run; nothing when there is none.
+function CatchLink() {
+  const index = useBundle(RUNS_INDEX, isRunIndex);
+  const run = index.state === "ready" ? checkerCatchRun(index.data, HEADLINE_RELEASE) : null;
+  return run === null ? null : <CatchClaimLink run={run} />;
+}
+
+function CatchClaimLink({ run }: { run: RunIndexEntry }) {
+  const loaded = useBundle(run.file, isRunFile);
+  const claimId = loaded.state === "ready" ? firstContradictedClaim(loaded.data) : null;
+  if (claimId === null) return null;
+  return (
+    <Link
+      to={`${runPath(run.run_id)}?claim=${encodeURIComponent(claimId)}`}
+      className="button button--secondary"
+    >
+      See the checker catch an error
     </Link>
   );
 }

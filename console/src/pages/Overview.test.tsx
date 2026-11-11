@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 
 import { AppRoutes } from "../App";
 import { RELEASE, mockFetch } from "../test/fixtures";
+import { INDEX, RUN } from "../test/runFixture";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -81,16 +82,37 @@ describe("Overview", () => {
 });
 
 describe("Overview actions", () => {
-  it("offers the run viewer disabled until it exists, and the evaluation", async () => {
-    mockFetch({ "evaluation/r2.json": RELEASE });
+  it("links to the latest completed review of 15/9-F-11 T2, and to the evaluation", async () => {
+    const index = INDEX.map((e) => ({ ...e, wellbore_name: "15/9-F-11 T2" }));
+    mockFetch({ "evaluation/r2.json": RELEASE, "runs/index.json": index });
     renderAt("/");
-    const watch = await screen.findByRole("button", { name: /Watch an agent review a well/ });
-    expect(watch).toBeDisabled();
-    expect(watch).toHaveTextContent("Coming next");
+    const watch = await screen.findByRole("link", { name: "Watch an agent review a well" });
+    expect(watch).toHaveAttribute("href", "/runs/run-fixture-r9");
     expect(screen.getByRole("link", { name: "See the evaluation" })).toHaveAttribute(
       "href",
       "/evaluation",
     );
+  });
+
+  it("opens the release run with a contradicted claim, with that claim selected", async () => {
+    const index = INDEX.map((e) => (e.source === "r9" ? { ...e, source: "r2" } : e));
+    mockFetch({
+      "evaluation/r2.json": RELEASE,
+      "runs/index.json": index,
+      "runs/run-fixture-1.json": RUN,
+    });
+    renderAt("/");
+    const link = await screen.findByRole("link", { name: "See the checker catch an error" });
+    expect(link).toHaveAttribute("href", "/runs/run-fixture-r9?claim=c4");
+  });
+
+  it("has no checker button when the release has no contradicted claim", async () => {
+    // The fixture's release run is in r9, not the headline release.
+    const index = INDEX.map((e) => ({ ...e, wellbore_name: "15/9-F-11 T2" }));
+    mockFetch({ "evaluation/r2.json": RELEASE, "runs/index.json": index });
+    renderAt("/");
+    await screen.findByRole("link", { name: "Watch an agent review a well" });
+    expect(screen.queryByRole("link", { name: "See the checker catch an error" })).toBeNull();
   });
 
   it("marks the checker as the deterministic step", () => {

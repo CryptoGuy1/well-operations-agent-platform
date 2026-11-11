@@ -5,14 +5,14 @@ import { Layout } from "./components/Layout";
 import { PAGES } from "./pages";
 import { ComingNext } from "./pages/ComingNext";
 import { Overview } from "./pages/Overview";
+import { RunPage } from "./pages/RunPage";
+import { RunsList } from "./pages/RunsList";
 
 const SITE = "Well Operations Agent Platform";
 
 const NEXT: Record<string, string> = {
   "/wells":
     "Each development wellbore: hole sections, lost time by section and cause, campaigns, depth against time and data-quality flags.",
-  "/runs":
-    "Recorded agent runs: every tool call, the first and final drafts claim by claim, the evidence each claim cites, cost and latency.",
   "/evaluation":
     "Every metric of the scored releases, the baseline, and the record of the failed release r1.",
   "/reconciliation":
@@ -24,7 +24,7 @@ const NEXT: Record<string, string> = {
 function Title() {
   const { pathname } = useLocation();
   useEffect(() => {
-    const page = PAGES.find((p) => p.path === pathname);
+    const page = PAGES.find((p) => p.path === pathname || pathname.startsWith(`${p.path}/`));
     document.title = page && page.path !== "/" ? `${page.label} · ${SITE}` : SITE;
   }, [pathname]);
   return null;
@@ -36,7 +36,9 @@ export function AppRoutes() {
       <Title />
       <Routes>
         <Route path="/" element={<Overview />} />
-        {PAGES.filter((p) => p.path !== "/").map((p) => (
+        <Route path="/runs" element={<RunsList />} />
+        <Route path="/runs/:runId" element={<RunPage />} />
+        {PAGES.filter((p) => p.path in NEXT).map((p) => (
           <Route
             key={p.path}
             path={p.path}
