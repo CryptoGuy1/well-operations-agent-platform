@@ -7,12 +7,12 @@ import { ComingNext } from "./pages/ComingNext";
 import { Overview } from "./pages/Overview";
 import { RunPage } from "./pages/RunPage";
 import { RunsList } from "./pages/RunsList";
+import { WellPage } from "./pages/WellPage";
+import { WellsList } from "./pages/WellsList";
 
 const SITE = "Well Operations Agent Platform";
 
 const NEXT: Record<string, string> = {
-  "/wells":
-    "Each development wellbore: hole sections, lost time by section and cause, campaigns, depth against time and data-quality flags.",
   "/evaluation":
     "Every metric of the scored releases, the baseline, and the record of the failed release r1.",
   "/reconciliation":
@@ -36,6 +36,8 @@ export function AppRoutes() {
       <Title />
       <Routes>
         <Route path="/" element={<Overview />} />
+        <Route path="/wells" element={<WellsList />} />
+        <Route path="/wells/:slug" element={<WellPage />} />
         <Route path="/runs" element={<RunsList />} />
         <Route path="/runs/:runId" element={<RunPage />} />
         {PAGES.filter((p) => p.path in NEXT).map((p) => (

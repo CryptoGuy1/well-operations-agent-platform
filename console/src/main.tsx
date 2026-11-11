@@ -8,6 +8,7 @@ import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/app.css";
 import "./styles/run.css";
+import "./styles/well.css";
 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";

@@ -1,5 +1,5 @@
-import { useId, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { useId, useMemo } from "react";
+import { Link, useSearchParams } from "react-router";
 
 import { Badge } from "../components/Badge";
 import { HEADLINE_RELEASE, isRelease, releasePath } from "../data/evaluation";
@@ -61,15 +61,25 @@ function RunsTable({
   index: RunIndexEntry[];
   coverage: Map<string, number | null>;
 }) {
-  const [filters, setFilters] = useState<RunFilters>(NO_FILTERS);
+  // The filters are in the address (?wellbore=…), so a filtered list can be linked to.
+  const [params, setParams] = useSearchParams();
+  const filters: RunFilters = {
+    wellbore: params.get("wellbore") ?? "",
+    system: params.get("system") ?? "",
+    model: params.get("model") ?? "",
+    release: params.get("release") ?? "",
+  };
+  const setFilters = (next: RunFilters) => {
+    setParams(Object.fromEntries(Object.entries(next).filter(([, v]) => v !== "")), {
+      replace: true,
+    });
+  };
+  const filtered = Object.values(filters).some((v) => v !== "");
   const options = useMemo(() => filterOptions(index), [index]);
-  const shown = useMemo(() => {
-    const runs = applyFilters(index, filters);
-    // Release runs first, newest first within each source.
-    return runs.sort(
-      (a, b) => a.source.localeCompare(b.source) * -1 || b.started_at.localeCompare(a.started_at),
-    );
-  }, [index, filters]);
+  // Release runs first, newest first within each source.
+  const shown = applyFilters(index, filters).sort(
+    (a, b) => a.source.localeCompare(b.source) * -1 || b.started_at.localeCompare(a.started_at),
+  );
   const id = useId();
 
   return (
@@ -103,7 +113,7 @@ function RunsTable({
         <button
           type="button"
           className="button button--secondary"
-          disabled={filters === NO_FILTERS}
+          disabled={!filtered}
           onClick={() => {
             setFilters(NO_FILTERS);
           }}

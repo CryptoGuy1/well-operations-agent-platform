@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The console's well view: a wells list with each wellbore's split role, report span, campaigns
+  and flag counts (held-out wellbores by name only, linking to their evaluation runs), and a well
+  page with a depth-against-time chart (hole sections as bands, primary and possible lost time by
+  day, one panel per campaign), the hole sections with their drilling rate or the reason there is
+  none, lost time by tier and cause with the tiers never added, the data-quality flags in plain
+  language and the well's agent runs. Every chart has a text summary and a table view. The bundle
+  adds each section's rate and lost time by day; the runs list keeps its filters in the address.
 - The console's agent run viewer: a runs list with filters by wellbore, system, model and
   release, first-draft figures and failure reasons; and a run page with the step trace and a
   replay control, the first and final drafts with every claim marked by its checker status and

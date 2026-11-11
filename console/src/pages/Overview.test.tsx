@@ -125,13 +125,16 @@ describe("Overview actions", () => {
 describe("Layout", () => {
   it("has a skip link, the attributions and a placeholder for later pages", () => {
     mockFetch({ "evaluation/r2.json": RELEASE });
-    renderAt("/wells");
+    renderAt("/evaluation");
     expect(screen.getByRole("link", { name: "Skip to content" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1, name: "Wells" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Evaluation" })).toBeInTheDocument();
     expect(screen.getByText("Coming next")).toBeInTheDocument();
     expect(screen.getByRole("contentinfo")).toHaveTextContent("Equinor Open Data Licence");
     expect(screen.getByRole("contentinfo")).toHaveTextContent("NLOD 2.0");
-    expect(screen.getByRole("link", { name: "Wells" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Evaluation" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     // The author, under the title in the navigation and at the top of the footer.
     for (const where of [screen.getByRole("banner"), screen.getByRole("contentinfo")]) {
       expect(within(where).getByRole("link", { name: "Benjamin Nweke" })).toHaveAttribute(
