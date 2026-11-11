@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- ADR 0005 (console architecture): a static React and TypeScript single-page app on
+  GitHub Pages, fed by a committed data bundle; precomputed runs; approval as a demonstration
+  only. ADR 0003 is amended: no PostgreSQL application state.
+- `make console-data` (`well_ops.console_data`): exports `console/public/data/` (wells, runs,
+  evaluation releases, production reconciliation and data health) deterministically, redacts
+  every exported string, and scans the bundle for personal data (counts only).
+- `console/public/data/`: the first bundle. `NOTICE` records that it distributes data derived from
+  the Volve and Sodir sources under their licences.
+
 ## [0.4.0-eval-r2] - 2026-11-10
 
 ### Added

@@ -32,6 +32,7 @@ With the data downloaded into `data/raw/` (`make download`, `make download-volve
 ```sh
 make rebuild   # parse data/raw/, then build and test the DuckDB warehouse with dbt
 make quality   # write docs/data/data-quality-report.md
+make console-data   # export the console's data bundle to console/public/data/ (ADR 0005)
 ```
 
 See [docs/architecture.md](docs/architecture.md) for the layers and data flow, and

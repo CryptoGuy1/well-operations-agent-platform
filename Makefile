@@ -1,6 +1,7 @@
 .PHONY: setup lint test download download-volve audit stage extract-log dbt-build \
 	dbt-compile rebuild quality serve-ddr \
-	serve-prod serve-sodir serve-rt runs-db replay review answer-key evaluate
+	serve-prod serve-sodir serve-rt runs-db replay review answer-key evaluate \
+	console-data
 
 setup:
 	uv sync
@@ -32,9 +33,14 @@ extract-log:
 
 DBT_ARGS = --project-dir warehouse --profiles-dir warehouse
 
+# Copies the build's results and manifest beside the warehouse, so a later dbt compile (which
+# rewrites warehouse/target/) cannot change what make console-data reads.
 dbt-build:
 	mkdir -p data/warehouse
-	uv run dbt build $(DBT_ARGS)
+	uv run dbt build $(DBT_ARGS); status=$$?; \
+		cp warehouse/target/run_results.json data/warehouse/dbt_run_results.json; \
+		cp warehouse/target/manifest.json data/warehouse/dbt_manifest.json; \
+		exit $$status
 
 # Compiles the models without data (used in CI).
 dbt-compile:
@@ -87,3 +93,7 @@ answer-key:
 evaluate:
 	@test -n "$(RELEASE)" || { echo "usage: make evaluate RELEASE=r<n>"; exit 2; }
 	uv run python scripts/evaluate.py --release "$(RELEASE)"
+
+# The console's data bundle (ADR 0005), exported locally and committed: console/public/data/.
+console-data:
+	uv run python scripts/console_data.py
