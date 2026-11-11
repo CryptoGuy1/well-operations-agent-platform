@@ -2,8 +2,13 @@ Well Operations Agent Platform
 Copyright 2026 Benjamin Nweke
 
 The source code in this repository is licensed under the Apache License, Version 2.0
-(see LICENSE). The datasets listed below are not distributed with this repository. They are
+(see LICENSE). The raw datasets listed below are not distributed with this repository. They are
 downloaded by the user from the original publishers and remain subject to their own licences.
+
+The console data bundle (console/public/data/) contains data derived from the Volve field data
+and the Sodir FactPages: counts, depths, durations, production volumes, redacted drilling-report
+text and agent runs over them. That data remains subject to the licences below, and is not
+licensed under the Apache License.
 
 --------------------------------------------------------------------------------
 Volve field data
